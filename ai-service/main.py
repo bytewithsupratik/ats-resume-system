@@ -18,7 +18,7 @@ client = genai.Client(api_key=api_key)
 app = FastAPI(title="ATS AI Microservice", version="1.0")
 
 # Primary & Fallback models
-MODELS = ["gemini-2.5-flash", "gemini-2.0-flash"]
+MODELS = ["gemini-2.5-flash", "gemini-3.8-flash"]
 
 def call_gemini_structured(prompt: str, schema_class, temperature: float = 0.2):
     last_exception = None
