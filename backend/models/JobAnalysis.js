@@ -13,12 +13,12 @@ const JobAnalysisSchema = new mongoose.Schema(
         {
             jobTitle: { type: String, required: true },
             rawJobDescription: { type: String, required: true },
-            extractedKeywords: 
-            {
-                technicalSkills: [{ type: String }],
-                softSkills: [{ type: String }],
-                domainKnowledge: [{ type: String }]
-            }
+            // extractedKeywords: 
+            // {
+            //     technicalSkills: [{ type: String }],
+            //     softSkills: [{ type: String }],
+            //     domainKnowledge: [{ type: String }]
+            // }
         },
 
         scoring:
@@ -50,7 +50,7 @@ const JobAnalysisSchema = new mongoose.Schema(
                     suggestion: { type: String, default: '' }
                 }
             ],
-            missingkeywords: [{ type: String }]
+            missingKeywords: [{ type: String }]
         },
 
         tailoredResume: 

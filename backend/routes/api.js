@@ -12,7 +12,7 @@ const upload = multer({
     limit: { fileSize: 10 * 1024 * 1024 } //10MB
 });
 
-const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
+const AI_SERVICE_URL = (process.env.AI_SERVICE_URL || 'http://localhost:8000').trim().replace(/\/$/, '');
 
 router.post('/profiles/manual', async (req, res) => {
     try {
@@ -56,7 +56,7 @@ router.post('/profiles/upload-pdf', upload.single('file'), async (req,res) => {
 
         let aiResponse;
         try {
-            aiResponse = await axios.post('${AI_SERVICE_URL}/ai/parse-linkedin', {
+            aiResponse = await axios.post(`${AI_SERVICE_URL}/ai/parse-linkedin`, {
                 rawText: rawText
             });
         } catch (aiErr) {
@@ -105,7 +105,7 @@ router.post('/profiles/:id/analyze', async (req, res) => {
         }
         let aiResponse;
         try {
-            aiResponse = await axios.post('${AI_SERVICE_URL}/ai/analyze-and-tailor', {
+            aiResponse = await axios.post(`${AI_SERVICE_URL}/ai/analyze-and-tailor`, {
                 profileData: profile,
                 jobDescription: jobDescription
             });
@@ -121,8 +121,8 @@ router.post('/profiles/:id/analyze', async (req, res) => {
         const newAnalysis = new JobAnalysis ({
             profileId: profile._id,
             targetJob: {
-                rawJobDescription: jobDescription,
-                extractedKeywords: aiData.targetJob?.extractedKeywords || {}
+                jobTitle: aiData.targetJobTitle,
+                rawJobDescription: jobDescription
             },
             scoring: aiData.scoring,
             audit: aiData.audit,
@@ -141,7 +141,7 @@ router.post('/profiles/:id/analyze', async (req, res) => {
     } catch (error) {
         console.error('Error during analysis', error);
         return res.status(500).json ({
-            success: true,
+            success: false,
             message: 'Failed to process ATS analysis.'
         });
     }
