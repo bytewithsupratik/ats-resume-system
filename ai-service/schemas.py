@@ -56,7 +56,17 @@ class ProfileSchemaObject(BaseModel):
     certifications: List[Certification] = []
     achievements: List[Achievement] = []
 
-# Scoring & Analysis Sub-schemas
+class TailoredSummaryOutput(BaseModel):
+    tailoredSummary: str
+
+class PrioritizedSkillsOutput(BaseModel):
+    technical: List[str]
+    tools: List[str]
+    softSkills: List[str]
+
+class OptimizedProjectsOutput(BaseModel):
+    optimizedProjects: List[OptimizedProject]
+
 class ScoreBreakdown(BaseModel):
     keywordMatchScore: float
     relevanceScore: float
@@ -73,8 +83,14 @@ class ProItem(BaseModel):
 
 class ConItem(BaseModel):
     issue: str
-    severity: str  # "HIGH" | "MEDIUM" | "LOW"
+    severity: str 
     suggestion: str
+
+class AuditAndScoringOutput(BaseModel):
+    scoring: Scoring
+    pros: List[ProItem]
+    cons: List[ConItem]
+    missingKeywords: List[str]
 
 class AuditFeedback(BaseModel):
     pros: List[ProItem]
