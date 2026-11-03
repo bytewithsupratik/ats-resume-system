@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Screen1Gateway from './components/Screen1Gateway';
 import Screen2Form from './components/Screen2Form';
@@ -7,8 +6,9 @@ import './App.css';
 
 export default function App() {
   const [step, setStep] = useState(1);
-  const [mode, setMode] = useState('upload'); 
+  const [mode, setMode] = useState('upload'); // 'upload' | 'manual'
   const [result, setResult] = useState(null);
+  const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [statusText, setStatusText] = useState('');
   const [error, setError] = useState('');
@@ -19,8 +19,9 @@ export default function App() {
     setStep(2);
   };
 
-  const onAnalysisDone = (data) => {
-    setResult(data);
+  const onAnalysisDone = (analysisData, initialProfile) => {
+    setProfileData(initialProfile);
+    setResult(analysisData);
     setLoading(false);
     setStep(3);
   };
@@ -28,23 +29,17 @@ export default function App() {
   const resetAll = () => {
     setStep(1);
     setResult(null);
+    setProfileData(null);
     setError('');
   };
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${step === 3 ? 'dashboard-view' : ''}`}>
       <header className="top-nav no-print">
         <div className="nav-container">
           <div className="logo" onClick={resetAll}>
             <span className="badge">ATS</span>
-            <h2>ResumeBuilder</h2>
-          </div>
-          <div className="nav-steps">
-            <span className={step === 1 ? 'active' : ''}>1. Intake</span>
-            <span>&rarr;</span>
-            <span className={step === 2 ? 'active' : ''}>2. Details & JD</span>
-            <span>&rarr;</span>
-            <span className={step === 3 ? 'active' : ''}>3. Results</span>
+            <span className="logo-title">Resume Editor</span>
           </div>
         </div>
       </header>
@@ -60,7 +55,8 @@ export default function App() {
         {loading && (
           <div className="loading-modal no-print">
             <div className="loader" />
-            <p>{statusText || 'Working on it...'}</p>
+            <p className="loading-title">{statusText || 'Processing...'}</p>
+            <p className="loading-sub">Analyzing competencies and tailoring against target Job Description</p>
           </div>
         )}
 
@@ -80,7 +76,7 @@ export default function App() {
         {step === 3 && (
           <Screen3Dashboard
             data={result}
-            onBack={() => setStep(2)}
+            fallbackProfile={profileData}
           />
         )}
       </main>
