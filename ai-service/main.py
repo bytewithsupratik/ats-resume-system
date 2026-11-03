@@ -131,10 +131,10 @@ async def generate_audit_and_score(profile_data: dict, jd: str):
     """
     return await call_gemini_async(prompt, AuditAndScoringOutput, temperature=0.1)
 
-@app.post("/ai/analyse-and-tailor",response_model=AnalysisResponseSchema)
+@app.post("/ai/analyze-and-tailor",response_model=AnalysisResponseSchema)
 async def analyse_and_tailor(payload:dict):
     profile_data=payload.get("profileData")
-    job__description=payload.get("jobdescription")
+    job__description=payload.get("jobDescription")
 
     if not profile_data or not job__description:
         raise HTTPException(status_code=400, detail="profileData and jobDescription are required.")

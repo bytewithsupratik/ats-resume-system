@@ -11,8 +11,8 @@ const JobAnalysisSchema = new mongoose.Schema(
 
         targetJob:
         {
-            jobTitle: { type: String, required: true },
-            rawJobDescription: { type: String, required: true },
+            jobTitle: { type: String },
+            rawJobDescription: { type: String },
             // extractedKeywords: 
             // {
             //     technicalSkills: [{ type: String }],
