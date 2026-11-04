@@ -6,7 +6,7 @@ const JobAnalysisSchema = new mongoose.Schema(
         {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Profile',
-            required: true
+            default: ''
         },
 
         targetJob:
@@ -23,7 +23,7 @@ const JobAnalysisSchema = new mongoose.Schema(
 
         scoring:
         {
-            overallMatchScore: { type: Number, required: true },
+            overallMatchScore: { type: Number, default: '' },
             breakdown: 
             {
                 keywordMatchScore: { type: Number, default: 0 },

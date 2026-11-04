@@ -3,8 +3,8 @@ const mongoose = require('mongoose');
 const ProfileSchema = new mongoose.Schema(
     {
         personalInfo: {
-            fullName: { type: String, required: true },
-            email: { type: String, required: true, match: [/\S+@\S+\.\S+/, 'Please enter a valid email address']  },
+            fullName: { type: String, default: '' },
+            email: { type: String, default: '', match: [/\S+@\S+\.\S+/, 'Please enter a valid email address']  },
             phone: { type: String, default: '' },
             location: { type: String, default: '' },
             linkedinUrl: { type: String, default: '' },
@@ -21,7 +21,7 @@ const ProfileSchema = new mongoose.Schema(
         projects: 
         [
             {
-                title: { type: String, required: true },
+                title: { type: String, default: '' },
                 description: { type: String, default: '' },
                 techStack: [{ type: String }],
                 liveLink: { type: String, default: '' },
@@ -32,9 +32,9 @@ const ProfileSchema = new mongoose.Schema(
         education: 
         [
             {
-                institution: { type: String, required: true },
-                degree: { type: String, required: true },
-                fieldOfStudy: { type: String, required: true },
+                institution: { type: String, default: '' },
+                degree: { type: String, default: '' },
+                fieldOfStudy: { type: String, default: '' },
                 startDate: { type: String, default: ' ' },
                 endDate: { type: String, default: ' ' }
             }
@@ -43,7 +43,7 @@ const ProfileSchema = new mongoose.Schema(
         achievements: 
         [
             {
-                title: { type: String, required: true },
+                title: { type: String, default: '' },
                 description: { type: String, default: '' },
                 date: { type: String, default: ' ' }
             }
