@@ -6,24 +6,24 @@ const JobAnalysisSchema = new mongoose.Schema(
         {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Profile',
-            required: true
+            default: ''
         },
 
         targetJob:
         {
-            jobTitle: { type: String, required: true },
-            rawJobDescription: { type: String, required: true },
-            extractedKeywords: 
-            {
-                technicalSkills: [{ type: String }],
-                softSkills: [{ type: String }],
-                domainKnowledge: [{ type: String }]
-            }
+            jobTitle: { type: String },
+            rawJobDescription: { type: String },
+            // extractedKeywords: 
+            // {
+            //     technicalSkills: [{ type: String }],
+            //     softSkills: [{ type: String }],
+            //     domainKnowledge: [{ type: String }]
+            // }
         },
 
         scoring:
         {
-            overallMatchScore: { type: Number, required: true },
+            overallMatchScore: { type: Number, default: '' },
             breakdown: 
             {
                 keywordMatchScore: { type: Number, default: 0 },
@@ -50,7 +50,7 @@ const JobAnalysisSchema = new mongoose.Schema(
                     suggestion: { type: String, default: '' }
                 }
             ],
-            missingkeywords: [{ type: String }]
+            missingKeywords: [{ type: String }]
         },
 
         tailoredResume: 
