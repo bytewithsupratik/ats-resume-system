@@ -7,7 +7,6 @@ export default function Screen2Form({ mode, onBack, onSuccess, setLoading, setSt
   const [jd, setJd] = useState('');
   const [manualStep, setManualStep] = useState(1);
 
-  // Profile Form State
   const [info, setInfo] = useState({
     fullName: '',
     email: '',
@@ -83,7 +82,7 @@ export default function Screen2Form({ mode, onBack, onSuccess, setLoading, setSt
         profileId = uploadRes.profileId;
         profilePayload = uploadRes.profileData;
       } else {
-        if (!info.fullName || !info.email) {
+        if (!info.fullName.trim() || !info.email.trim()) {
           setError('Full Name and Email are strictly required.');
           setLoading(false);
           return;
@@ -92,19 +91,44 @@ export default function Screen2Form({ mode, onBack, onSuccess, setLoading, setSt
         setStatusText('Saving candidate details...');
         const cleanArr = (str) => (str ? str.split(',').map((s) => s.trim()).filter(Boolean) : []);
 
+        // Filter out empty rows so phantom items never enter MongoDB
+        const validProjects = projects
+          .filter((p) => p.title && p.title.trim())
+          .map((p) => ({
+            title: p.title.trim(),
+            role: p.role?.trim() || '',
+            organization: p.organization?.trim() || '',
+            techStack: cleanArr(p.techStack),
+            bullets: p.bullets ? p.bullets.split('\n').map((b) => b.trim()).filter(Boolean) : []
+          }));
+
+        const validEducation = education
+          .filter((ed) => ed.institution && ed.institution.trim())
+          .map((ed) => ({
+            institution: ed.institution.trim(),
+            degree: ed.degree?.trim() || '',
+            fieldOfStudy: ed.fieldOfStudy?.trim() || '',
+            gradYear: ed.gradYear?.trim() || '',
+            score: ed.score?.trim() || ''
+          }));
+
         profilePayload = {
-          personalInfo: info,
+          personalInfo: {
+            fullName: info.fullName.trim(),
+            email: info.email.trim(),
+            phone: info.phone.trim(),
+            location: info.location.trim(),
+            linkedinUrl: info.linkedinUrl.trim(),
+            githubUrl: info.githubUrl.trim(),
+            summary: info.summary.trim()
+          },
           skills: {
             technical: cleanArr(skills.technical),
             tools: cleanArr(skills.tools),
             softSkills: cleanArr(skills.softSkills)
           },
-          projects: projects.map((p) => ({
-            ...p,
-            techStack: cleanArr(p.techStack),
-            bullets: p.bullets ? p.bullets.split('\n').map((b) => b.trim()).filter(Boolean) : []
-          })),
-          education: education.filter((ed) => ed.institution && ed.degree)
+          projects: validProjects,
+          education: validEducation
         };
 
         const res = await fetch(`${BACKEND_URL}/manual`, {
@@ -257,7 +281,7 @@ export default function Screen2Form({ mode, onBack, onSuccess, setLoading, setSt
                 <h3>Education</h3>
                 <div className="input-grid">
                   <div className="form-group">
-                    <label>Institution Name *</label>
+                    <label>Institution Name</label>
                     <input type="text" placeholder="University / College" value={education[0].institution} onChange={(e) => {
                       const arr = [...education];
                       arr[0].institution = e.target.value;
@@ -265,7 +289,7 @@ export default function Screen2Form({ mode, onBack, onSuccess, setLoading, setSt
                     }} />
                   </div>
                   <div className="form-group">
-                    <label>Degree & Major *</label>
+                    <label>Degree & Major</label>
                     <input type="text" placeholder="e.g. B.Tech in Computer Science" value={education[0].degree} onChange={(e) => {
                       const arr = [...education];
                       arr[0].degree = e.target.value;
@@ -293,7 +317,7 @@ export default function Screen2Form({ mode, onBack, onSuccess, setLoading, setSt
 
               <div className="section-card">
                 <div className="row-between">
-                  <h3>Key Projects & Experience</h3>
+                  <h3>Key Projects</h3>
                   <button type="button" className="btn-small" onClick={addProject}>+ Add Project</button>
                 </div>
 
@@ -320,7 +344,7 @@ export default function Screen2Form({ mode, onBack, onSuccess, setLoading, setSt
                       <textarea
                         rows="3"
                         className="form-textarea"
-                        placeholder="Architected scalable web system...&#10;Decreased query response time by 35%..."
+                        placeholder="Architected system...&#10;Decreased latency by 35%..."
                         value={proj.bullets}
                         onChange={(e) => updateProject(idx, 'bullets', e.target.value)}
                       />

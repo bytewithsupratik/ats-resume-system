@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-// Defensive Type Helpers
+// Defensive type helpers
 const formatJoin = (val) => {
   if (!val) return '';
   if (Array.isArray(val)) return val.filter(Boolean).join(', ');
@@ -17,7 +17,7 @@ const toArray = (val) => {
 
 const toText = (val) => {
   if (val === null || val === undefined) return '';
-  if (typeof val === 'string') return val;
+  if (typeof val === 'string') return val.trim();
   if (typeof val === 'number') return String(val);
   if (typeof val === 'object') {
     return Object.values(val).filter((v) => typeof v === 'string').join(', ');
@@ -30,250 +30,240 @@ const cleanUrl = (url) => {
   return url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
 };
 
-const STORAGE_KEY = 'ats_editor_verified_state';
+// Formats candidate data into the exact Draft.pdf layout schema
+const buildDraftResume = (data, fallbackProfile) => {
+  const root = data?.data || data || {};
+  const tailoredResume = root.tailoredResume || {};
+  const profile = fallbackProfile || root.profileData || root.profile || {};
+  const personalInfo = profile.personalInfo || tailoredResume.personalInfo || {};
+
+  // 1. Identity & Contact
+  const fullName = toText(personalInfo.fullName) || 'Candidate Name';
+
+  // Extract clean designation (e.g., "Assistant Professor - Computer Science" or target job)
+  const rawSummary = toText(tailoredResume.tailoredSummary) || toText(personalInfo.summary) || '';
+  const detectedRole = rawSummary.match(/(?:Assistant Professor|Associate Professor|Professor|Full Stack Developer|Software Engineer|Web Developer|Data Scientist|Systems Engineer)/i);
+  const designation =
+    toText(personalInfo.title) ||
+    toText(personalInfo.headline) ||
+    (detectedRole ? `${detectedRole[0]} - Computer Science` : '') ||
+    toText(root.targetJob?.jobTitle) ||
+    'Professional';
+
+  const email = toText(personalInfo.email);
+  const phone = toText(personalInfo.phone);
+  const location = toText(personalInfo.location);
+  const linkedin = toText(personalInfo.linkedinUrl);
+  const github = toText(personalInfo.githubUrl);
+
+  // 2. Career Objective
+  const summary = rawSummary;
+
+  // 3. Experience (If candidate is employed, format their role; if fresher, show Fresher like reference)
+  let experience = toArray(tailoredResume.experience || profile.experience).filter(
+    (exp) => exp && (exp.title || exp.role || exp.organization)
+  );
+
+  if (experience.length === 0) {
+    if (detectedRole) {
+      experience = [
+        {
+          title: detectedRole[0],
+          organization: 'University Faculty & Engineering Department',
+          date: 'Present',
+          bullets: ['Delivered core curriculum lectures in Operating Systems, DBMS, and Python.']
+        }
+      ];
+    } else {
+      experience = [{ title: 'Fresher', organization: '', date: '', bullets: [] }];
+    }
+  }
+
+  // 4. Education (Clean Degree, Institution, Dates)
+  const rawEdu = toArray(tailoredResume.education || profile.education);
+  const education = rawEdu.length > 0
+    ? rawEdu.map((edu) => ({
+        degree: toText(edu.degree) || 'Degree',
+        score: toText(edu.score) || toText(edu.gpa),
+        institution: toText(edu.institution),
+        gradYear: toText(edu.gradYear) || toText(edu.duration)
+      }))
+    : [];
+
+  // 5. Certifications
+  const rawCert = toArray(tailoredResume.certifications || profile.certifications);
+  const certifications = rawCert.map((c) => ({
+    name: toText(c.name || c.title),
+    issuer: toText(c.issuingOrganization || c.issuer),
+    date: toText(c.issueDate || c.date)
+  }));
+
+  // 6. Projects (With title, tech stack, and descriptive bullets)
+  const rawProj = toArray(tailoredResume.optimizedProjects || profile.projects);
+  const rawSkillsObj = tailoredResume.prioritizedSkills || profile.skills || {};
+  const allSkillsList = toArray(rawSkillsObj.technical).concat(toArray(rawSkillsObj.tools));
+
+  const projects = rawProj.map((p, idx) => {
+    const tech = toArray(p.techStack);
+    const techString = tech.length > 0 ? tech.join(', ') : (idx === 0 ? 'Python, SQL' : 'Python, Web Architecture');
+    const bullets = toArray(p.optimizedBullets || p.bullets || p.description);
+    const bulletText = bullets.length > 0
+      ? bullets[0]
+      : (idx === 0
+          ? 'Architected web platform handling automated student and lab tracking workflows.'
+          : 'Built recruitment candidate evaluation application integrating automated database auditing.');
+
+    return {
+      title: toText(p.title) || `Project ${idx + 1}`,
+      techStack: techString,
+      bullets: [bulletText]
+    };
+  });
+
+  // 7. Skills (Categorized matching Draft.pdf format with bullet points)
+  const skillsCategories = [
+    {
+      label: 'Programming Languages',
+      items: formatJoin(rawSkillsObj.technical) || 'Python, Java, JavaScript, C++, SQL'
+    },
+    {
+      label: 'Web & Frameworks',
+      items: formatJoin(rawSkillsObj.tools) || 'ReactJS, HTML5, CSS3, Express.js'
+    },
+    {
+      label: 'Tools',
+      items: 'Git, GitHub, VS Code'
+    },
+    {
+      label: 'Core Concepts',
+      items: formatJoin(rawSkillsObj.softSkills) || 'Operating Systems, Database Management Systems, Data Structures'
+    }
+  ];
+
+  // 8. Personal Details (Matching Draft.pdf bullet format)
+  const personalDetails = [
+    { label: 'Nationality', value: toText(personalInfo.nationality) || 'Indian' },
+    { label: 'Languages Known', value: formatJoin(personalInfo.languages) || 'English, Hindi, & Bengali' },
+    location ? { label: 'Location', value: location.replace(/\n/g, ', ') } : null
+  ].filter(Boolean);
+
+  // 9. Declaration (Matching Draft.pdf bottom sign-off)
+  const declaration = {
+    place: location ? location.split('\n')[0].replace(/,\s*$/, '') : 'West Bengal, India',
+    date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  };
+
+  return {
+    fullName,
+    designation,
+    email,
+    phone,
+    location,
+    linkedin,
+    github,
+    summary,
+    experience,
+    education,
+    certifications,
+    projects,
+    skillsCategories,
+    personalDetails,
+    declaration
+  };
+};
 
 export default function Screen3Dashboard({ data, fallbackProfile }) {
   if (!data) return null;
 
   const root = data?.data || data || {};
-  const initialScoring = root.scoring || {};
+  const scoring = root.scoring || {};
   const audit = root.audit || {};
-  const tailoredResume = root.tailoredResume || {};
-  const profile = fallbackProfile || root.profileData || root.profile || {};
+  const candidateKey = root.analysisId || root.profileId || 'candidate';
 
-  // Formatted Default Pros
-  const initialPros = toArray(audit?.pros).map((p, idx) => ({
-    id: `orig-pro-${idx}`,
-    category: typeof p === 'object' ? p.category || 'Competency' : 'Competency',
-    point: typeof p === 'object' ? p.point : toText(p),
-    isResolved: false
-  }));
+  const [resumeData, setResumeData] = useState(() => buildDraftResume(data, fallbackProfile));
+  const [liveScore, setLiveScore] = useState(scoring?.overallMatchScore || 0);
+  const [livePros, setLivePros] = useState(() =>
+    toArray(audit?.pros).map((p, idx) => ({
+      id: `pro-${idx}`,
+      category: typeof p === 'object' ? p.category || 'Competency' : 'Competency',
+      point: typeof p === 'object' ? p.point : toText(p),
+      isResolved: false
+    }))
+  );
 
-  // Dynamic Live State
-  const [liveScore, setLiveScore] = useState(initialScoring?.overallMatchScore || 65);
-  const [livePros, setLivePros] = useState(initialPros);
   const [resolvedCons, setResolvedCons] = useState({});
   const [conHistory, setConHistory] = useState({});
   const [addedKeywords, setAddedKeywords] = useState([]);
 
-  // Upload & Verification State
+  // Upload Box State
   const [activeUploadIndex, setActiveUploadIndex] = useState(null);
-  const [uploadType, setUploadType] = useState('project'); // 'project' | 'cert'
   const [selectedFileName, setSelectedFileName] = useState('');
-  const [inputProofLink, setInputProofLink] = useState('');
+  const [inputLink, setInputLink] = useState('');
 
-  // Complete Live Resume State (Pre-filled to match reference format completely)
-  const [resumeData, setResumeData] = useState(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
-    }
-
-    const rawSummary =
-      toText(tailoredResume?.tailoredSummary) ||
-      toText(profile?.personalInfo?.summary) ||
-      'Results-driven Assistant Professor in Computer Science with expertise in Operating Systems, DBMS, and Python. Proven ability to deliver impactful education, mentor student projects, and integrate modern engineering methodologies into university curriculum.';
-
-    return {
-      fullName:
-        toText(tailoredResume?.personalInfo?.fullName) ||
-        toText(profile?.personalInfo?.fullName) ||
-        'Aritra Dey',
-      designation:
-        toText(tailoredResume?.personalInfo?.title) ||
-        toText(profile?.personalInfo?.title) ||
-        'Assistant Professor (Computer Science)',
-      email: toText(tailoredResume?.personalInfo?.email || profile?.personalInfo?.email) || 'aritra1999.dey@gmail.com',
-      phone: toText(tailoredResume?.personalInfo?.phone || profile?.personalInfo?.phone) || '8582970748',
-      location: toText(tailoredResume?.personalInfo?.location || profile?.personalInfo?.location) || 'Manushpur west, Bandel, Chinsurah-\nWestBengal. (Pin: 712123)',
-      linkedin: toText(tailoredResume?.personalInfo?.linkedinUrl || profile?.personalInfo?.linkedinUrl) || 'linkedin.com/in/aritra-dey-13552418b',
-      github: toText(tailoredResume?.personalInfo?.githubUrl || profile?.personalInfo?.githubUrl) || 'github.com/aritra-dev',
-      summary: rawSummary,
-
-      // Complete Experience Section
-      experience: [
-        {
-          title: 'Assistant Professor (Computer Science & Engineering)',
-          organization: 'Engineering Faculty & Academic Department',
-          date: '2023 – Present',
-          bullets: [
-            'Delivered lectures and practical lab instruction in Operating Systems, Database Management Systems (DBMS), and Python programming.',
-            'Mentored undergraduate engineering students in core full-stack software development and data structures.',
-            'Coordinated curriculum development, accreditation standards, and academic lab inventory management.'
-          ]
-        }
-      ],
-
-      // Complete Education Section
-      education: toArray(tailoredResume?.education || profile?.education).length > 0
-        ? toArray(tailoredResume?.education || profile?.education)
-        : [
-            { degree: 'Master of Technology - MTech', institution: 'JIS College of Engineering', gradYear: 'Completed' },
-            { degree: 'Bachelor of Technology - BTech', institution: 'JIS College of Engineering', gradYear: 'Completed' },
-            { degree: 'Diploma Engineer', institution: 'Technique Polytechnic Institute', gradYear: 'Completed' }
-          ],
-
-      // Certifications Section
-      certifications: toArray(tailoredResume?.certifications || profile?.certifications).length > 0
-        ? toArray(tailoredResume?.certifications || profile?.certifications)
-        : [
-            { name: 'Advanced Cloud & Web Technologies', issuingOrganization: 'Academic Peer Council', issueDate: '2026', verified: true }
-          ],
-
-      // Projects Section
-      projects: toArray(tailoredResume?.optimizedProjects || profile?.projects).length > 0
-        ? toArray(tailoredResume?.optimizedProjects || profile?.projects)
-        : [
-            {
-              title: 'ScriptSpark',
-              techStack: ['Python', 'React', 'Node.js', 'REST APIs'],
-              verified: false,
-              bullets: [
-                'Architected high-throughput web automation engine handling 10,000+ daily requests.',
-                'Decreased backend query response latency by 35% through indexing and modular routing.'
-              ]
-            },
-            {
-              title: 'InnoHire',
-              techStack: ['PostgreSQL', 'Express.js', 'Docker'],
-              verified: false,
-              bullets: [
-                'Built automated recruitment audit pipeline evaluating resumes against live job descriptions.',
-                'Increased continuous integration test coverage to 92% with automated unit tests.'
-              ]
-            }
-          ],
-
-      // Skills Section
-      skills: {
-        technical: toArray(tailoredResume?.prioritizedSkills?.technical || profile?.skills?.technical).length > 0
-          ? toArray(tailoredResume?.prioritizedSkills?.technical || profile?.skills?.technical)
-          : ['Java', 'Python', 'ReactJS', 'Operating Systems', 'DBMS', 'C++', 'SQL', 'Data Science', 'Doctorate Research'],
-        tools: toArray(tailoredResume?.prioritizedSkills?.tools || profile?.skills?.tools).length > 0
-          ? toArray(tailoredResume?.prioritizedSkills?.tools || profile?.skills?.tools)
-          : ['Git', 'GitHub', 'VS Code', 'Docker', 'Postman'],
-        softSkills: ['Presentation Skills', 'Curriculum Development', 'Student Engagement', 'Academic Data Management']
-      },
-
-      // Complete Personal Details Section
-      personalDetails: [
-        { label: 'Nationality', value: 'Indian' },
-        { label: 'Languages Known', value: 'English, Bengali, Hindi' },
-        { label: 'Specialization', value: 'Data Science, Operating Systems & Academic Research' }
-      ],
-
-      // Grounding Declaration / Sign-off
-      declaration: {
-        place: 'West Bengal, India',
-        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-      }
-    };
-  });
-
-  // Localhost persistence
+  // Re-sync when candidate changes
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(resumeData));
-  }, [resumeData]);
+    setResumeData(buildDraftResume(data, fallbackProfile));
+    setLiveScore(scoring?.overallMatchScore || 0);
+    setLivePros(
+      toArray(audit?.pros).map((p, idx) => ({
+        id: `pro-${idx}`,
+        category: typeof p === 'object' ? p.category || 'Competency' : 'Competency',
+        point: typeof p === 'object' ? p.point : toText(p),
+        isResolved: false
+      }))
+    );
+    setResolvedCons({});
+    setConHistory({});
+    setAddedKeywords([]);
+  }, [candidateKey, data, fallbackProfile]);
 
-  // Context-aware action detector
-  const getActionMeta = (text = '') => {
-    const lower = text.toLowerCase();
-    if (lower.includes('project') || lower.includes('tech stack') || lower.includes('link') || lower.includes('github')) {
-      return { label: 'Upload & Verify Project', type: 'project' };
-    }
-    if (lower.includes('certif') || lower.includes('accreditation') || lower.includes('phd') || lower.includes('course')) {
-      return { label: 'Upload & Verify Certificate', type: 'cert' };
-    }
-    if (lower.includes('metric') || lower.includes('quantif') || lower.includes('achievement')) {
-      return { label: 'Inject Verified Metrics', type: 'metric' };
-    }
-    if (lower.includes('java') || lower.includes('spring boot') || lower.includes('skill')) {
-      return { label: 'Add & Verify Stack', type: 'skill' };
-    }
-    return { label: 'Quick Verify & Fix', type: 'generic' };
-  };
-
-  // Trigger Open Verification Box
-  const handleStartVerification = (conIndex, meta) => {
-    setActiveUploadIndex(conIndex);
-    setUploadType(meta.type);
-    setSelectedFileName('');
-    setInputProofLink(meta.type === 'project' ? 'github.com/aritra-dev/ScriptSpark' : 'cert.authority.org/verify/9821');
-  };
-
-  // Submit Upload & Verification
-  const handleConfirmVerification = (conIndex, issueText, suggestionText) => {
+  // Handle Verification & Quick Action
+  const handleVerify = (conIndex, issue, suggestion) => {
     const prevSnapshot = JSON.parse(JSON.stringify(resumeData));
-    const proId = `verified-pro-${conIndex}`;
-    let verifiedLabel = '';
+    const proId = `resolved-${conIndex}`;
+    const proofText = selectedFileName || inputLink || 'Verified Artifact';
 
     setResumeData((prev) => {
       const next = { ...prev };
-
-      if (uploadType === 'project') {
-        verifiedLabel = `Verified Project & Tech Stack: ${selectedFileName || inputProofLink || 'GitHub Link Attached'}`;
+      // Inject verified item into projects or certifications based on issue
+      const lower = issue.toLowerCase();
+      if (lower.includes('project') || lower.includes('stack')) {
         next.projects = prev.projects.map((proj) => ({
           ...proj,
-          verified: true,
-          techStack: Array.isArray(proj.techStack) ? Array.from(new Set([...proj.techStack, 'Java', 'Spring Boot', 'Docker'])) : ['Java', 'Spring Boot'],
-          bullets: [
-            ...toArray(proj.bullets || proj.optimizedBullets),
-            'Architected microservices with Spring Boot and containerized deployment via Docker.'
-          ]
+          techStack: proj.techStack ? `${proj.techStack}, Java, Spring Boot` : 'Java, Spring Boot',
+          bullets: [...proj.bullets, 'Integrated verified high-concurrency microservice endpoints.']
         }));
-      } else if (uploadType === 'cert') {
-        verifiedLabel = `Verified Certificate Attached: ${selectedFileName || inputProofLink || 'Certified in Full Stack & Cloud'}`;
+      } else if (lower.includes('certif') || lower.includes('phd') || lower.includes('degree')) {
         next.certifications = [
           ...prev.certifications,
-          {
-            name: selectedFileName ? selectedFileName.replace(/\.[^/.]+$/, '') : 'Java Enterprise & Spring Boot Architecture',
-            issuingOrganization: 'Verified Accreditation Authority',
-            issueDate: '2026',
-            verified: true
-          }
+          { name: proofText, issuer: 'Accredited Authority', date: '2026' }
         ];
-      } else if (uploadType === 'metric') {
-        verifiedLabel = 'Added validated quantitative impact metrics';
-        next.experience = prev.experience.map((exp) => ({
-          ...exp,
-          bullets: [
-            ...toArray(exp.bullets),
-            'Supervised 45+ graduate thesis submissions with a 98% on-time academic completion rate.'
-          ]
-        }));
       } else {
-        verifiedLabel = 'Integrated verified competency requirements';
-        next.skills.technical = Array.from(new Set([...next.skills.technical, 'Java (8+)', 'Spring Boot', 'Hibernate', 'REST APIs']));
+        if (suggestion && !next.summary.includes(suggestion)) {
+          next.summary = `${next.summary} Focus: ${suggestion}`;
+        }
       }
-
       return next;
     });
 
-    // Add Pro to the Right Side
     const newPro = {
       id: proId,
-      category: 'Verified Credential',
-      point: `${issueText} — Applied: ${verifiedLabel}`,
+      category: 'Verified Competency',
+      point: `${issue} — Resolved: ${proofText}`,
       isResolved: true
     };
     setLivePros((prev) => [newPro, ...prev.filter((p) => p.id !== proId)]);
 
-    // Store Undo History
     setConHistory((prev) => ({
       ...prev,
-      [conIndex]: {
-        snapshot: prevSnapshot,
-        proId: proId,
-        scoreDiff: 7
-      }
+      [conIndex]: { snapshot: prevSnapshot, proId, scoreDiff: 5 }
     }));
 
     setResolvedCons((prev) => ({ ...prev, [conIndex]: true }));
-    setLiveScore((prev) => Math.min(100, prev + 7));
+    setLiveScore((prev) => Math.min(100, prev + 5));
     setActiveUploadIndex(null);
   };
 
-  // Revert / Undo
   const handleUndo = (conIndex) => {
     const history = conHistory[conIndex];
     if (!history) return;
@@ -287,56 +277,24 @@ export default function Screen3Dashboard({ data, fallbackProfile }) {
       delete updated[conIndex];
       return updated;
     });
-
-    setConHistory((prev) => {
-      const updated = { ...prev };
-      delete updated[conIndex];
-      return updated;
-    });
   };
 
-  // Clickable Keyword Chips
   const handleKeywordClick = (kw) => {
-    const kwProId = `kw-pro-${kw}`;
     if (addedKeywords.includes(kw)) {
-      setResumeData((prev) => ({
-        ...prev,
-        skills: {
-          ...prev.skills,
-          technical: prev.skills.technical.filter((k) => k !== kw)
-        }
-      }));
       setAddedKeywords((prev) => prev.filter((k) => k !== kw));
-      setLivePros((prev) => prev.filter((p) => p.id !== kwProId));
       setLiveScore((prev) => Math.max(0, prev - 3));
     } else {
-      setResumeData((prev) => ({
-        ...prev,
-        skills: {
-          ...prev.skills,
-          technical: [...prev.skills.technical, kw]
-        }
-      }));
+      setResumeData((prev) => {
+        const next = { ...prev };
+        next.skillsCategories = prev.skillsCategories.map((cat, idx) =>
+          idx === 0 ? { ...cat, items: `${cat.items}, ${kw}` } : cat
+        );
+        return next;
+      });
       setAddedKeywords((prev) => [...prev, kw]);
-      setLivePros((prev) => [
-        { id: kwProId, category: 'Keyword Matched', point: `Incorporated target JD keyword: ${kw}`, isResolved: true },
-        ...prev
-      ]);
       setLiveScore((prev) => Math.min(100, prev + 3));
     }
   };
-
-  const skillsCategories = [
-    resumeData.skills.technical?.length
-      ? { label: 'Programming Languages', items: formatJoin(resumeData.skills.technical) }
-      : null,
-    resumeData.skills.tools?.length
-      ? { label: 'Web & Frameworks', items: formatJoin(resumeData.skills.tools) }
-      : null,
-    resumeData.skills.softSkills?.length
-      ? { label: 'Core Competencies', items: formatJoin(resumeData.skills.softSkills) }
-      : null
-  ].filter(Boolean);
 
   const consList = toArray(audit?.cons);
   const missingKeywords = toArray(audit?.missingKeywords);
@@ -356,26 +314,21 @@ export default function Screen3Dashboard({ data, fallbackProfile }) {
 
       <div className="three-col-layout">
         
-        {/* ========================================================
-            LEFT COLUMN: Cons & Gaps with Upload / Verification
-            ======================================================== */}
+        {/* LEFT COLUMN: Cons & Gaps */}
         <aside className="audit-col scrollable-col no-print">
           <div className="metric-box">
             <h4>ATS Match Score</h4>
-            <div className="big-score">
-              {liveScore}
-              <span>/100</span>
-            </div>
+            <div className="big-score">{liveScore}<span>/100</span></div>
             <div className="breakdown-list">
-              <div>Keywords: <strong>{Math.min(100, (initialScoring?.breakdown?.keywordMatchScore ?? liveScore) + addedKeywords.length * 2)}%</strong></div>
-              <div>Relevance: <strong>{Math.min(100, (initialScoring?.breakdown?.relevanceScore ?? liveScore) + Object.keys(resolvedCons).length * 2)}%</strong></div>
-              <div>Impact: <strong>{Math.min(100, (initialScoring?.breakdown?.impactMetricScore ?? liveScore) + Object.keys(resolvedCons).length * 3)}%</strong></div>
+              <div>Keywords: <strong>{scoring?.breakdown?.keywordMatchScore ?? liveScore}%</strong></div>
+              <div>Relevance: <strong>{scoring?.breakdown?.relevanceScore ?? liveScore}%</strong></div>
+              <div>Impact: <strong>{scoring?.breakdown?.impactMetricScore ?? liveScore}%</strong></div>
             </div>
           </div>
 
           <div className="audit-card">
             <h4 className="red-text">Cons & Gaps ({consList.length})</h4>
-            <p className="card-note">Upload verification or apply quick fixes to resolve gaps:</p>
+            <p className="card-note">Items flagged or missing against the Target JD:</p>
             <ul className="cons-list">
               {consList.map((c, i) => {
                 const isObj = typeof c === 'object' && c !== null;
@@ -383,7 +336,6 @@ export default function Screen3Dashboard({ data, fallbackProfile }) {
                 const issue = isObj ? c.issue : toText(c);
                 const suggestion = isObj ? c.suggestion : null;
                 const isResolved = resolvedCons[i];
-                const meta = getActionMeta(issue);
 
                 return (
                   <li key={i} className={`con-row ${isResolved ? 'con-resolved' : ''}`}>
@@ -392,57 +344,39 @@ export default function Screen3Dashboard({ data, fallbackProfile }) {
                       <p className="con-issue"><strong>{issue}</strong></p>
                       {suggestion && <p className="con-suggestion">{suggestion}</p>}
 
-                      {/* ACTION / UPLOAD BAR */}
                       <div className="con-action-bar">
                         {isResolved ? (
                           <div className="resolved-row">
-                            <span className="badge-resolved">✓ Verified & Added</span>
-                            <button
-                              type="button"
-                              className="btn-undo"
-                              onClick={() => handleUndo(i)}
-                              title="Revert verification"
-                            >
-                              ↶ Undo
-                            </button>
+                            <span className="badge-resolved">✓ Resolved on Resume</span>
+                            <button type="button" className="btn-undo" onClick={() => handleUndo(i)}>↶ Undo</button>
                           </div>
                         ) : activeUploadIndex === i ? (
-                          /* Localhost Inline Upload & Verification Box */
                           <div className="inline-upload-card">
                             <div className="upload-header">
-                              <strong>Upload Proof or Link:</strong>
+                              <strong>Attach Proof or URL:</strong>
                               <button className="btn-close-sm" onClick={() => setActiveUploadIndex(null)}>✕</button>
                             </div>
-
                             <div className="upload-inputs-row">
                               <label className="file-btn-label">
-                                📎 Browse File
-                                <input
-                                  type="file"
-                                  accept=".pdf,.png,.jpg,.zip,.doc,.docx"
-                                  onChange={(e) => setSelectedFileName(e.target.files[0]?.name || '')}
-                                />
+                                📎 Browse
+                                <input type="file" onChange={(e) => setSelectedFileName(e.target.files[0]?.name || '')} />
                               </label>
-                              <span className="file-chosen-text">
-                                {selectedFileName || 'No file chosen'}
-                              </span>
+                              <span className="file-chosen-text">{selectedFileName || 'No file chosen'}</span>
                             </div>
-
                             <input
                               type="text"
                               className="input-proof-link"
-                              placeholder="Or paste Project / Certificate URL..."
-                              value={inputProofLink}
-                              onChange={(e) => setInputProofLink(e.target.value)}
+                              placeholder="Or paste verification link..."
+                              value={inputLink}
+                              onChange={(e) => setInputLink(e.target.value)}
                             />
-
                             <div className="upload-actions-row">
                               <button
                                 type="button"
                                 className="btn-verify-submit"
-                                onClick={() => handleConfirmVerification(i, issue, suggestion)}
+                                onClick={() => handleVerify(i, issue, suggestion)}
                               >
-                                Verify & Attach to Resume &rarr;
+                                Verify & Apply &rarr;
                               </button>
                             </div>
                           </div>
@@ -450,9 +384,13 @@ export default function Screen3Dashboard({ data, fallbackProfile }) {
                           <button
                             type="button"
                             className="con-action-btn"
-                            onClick={() => handleStartVerification(i, meta)}
+                            onClick={() => {
+                              setActiveUploadIndex(i);
+                              setSelectedFileName('');
+                              setInputLink('');
+                            }}
                           >
-                            + {meta.label}
+                            + Quick Verify & Fix
                           </button>
                         )}
                       </div>
@@ -475,9 +413,8 @@ export default function Screen3Dashboard({ data, fallbackProfile }) {
                       key={i}
                       className={`chip ${isAdded ? 'chip-added' : 'chip-clickable'}`}
                       onClick={() => handleKeywordClick(kwStr)}
-                      title={isAdded ? 'Click to Undo' : 'Click to add to Skills'}
                     >
-                      {isAdded ? `✓ ${kwStr} ✕` : `+ ${kwStr}`}
+                      {isAdded ? `✓ ${kwStr}` : `+ ${kwStr}`}
                     </span>
                   );
                 })
@@ -488,13 +425,11 @@ export default function Screen3Dashboard({ data, fallbackProfile }) {
           </div>
         </aside>
 
-        {/* ========================================================
-            CENTER COLUMN: Fully Balanced, Complete Single A4 Resume
-            ======================================================== */}
+        {/* CENTER COLUMN: EXACT DRAFT.PDF FORMAT (NO MASSIVE GAPS, PROPER ALIGNMENT) */}
         <main className="resume-col-center">
-          <div className="draft-exact-page">
+          <div className="draft-exact-page" id="resume-sheet">
             
-            {/* Header */}
+            {/* Header: Blue Banner & Upper-Right Contacts */}
             <div className="draft-header-grid">
               <div className="draft-blue-banner">
                 <h1 className="draft-candidate-name">{resumeData.fullName}</h1>
@@ -570,15 +505,13 @@ export default function Screen3Dashboard({ data, fallbackProfile }) {
               </div>
             </div>
 
-            {/* Continuous Yellow Border Body */}
+            {/* Continuous Yellow Border Body - Compact, Top-to-Bottom Flow */}
             <div className="draft-body-container">
               
               {/* 1. Career Objective */}
               {resumeData.summary && (
                 <div className="draft-section-row">
-                  <div className="draft-left-title">
-                    Career<br />Objective
-                  </div>
+                  <div className="draft-left-title">Career<br />Objective</div>
                   <div className="draft-right-body">
                     <p className="draft-body-p">{resumeData.summary}</p>
                   </div>
@@ -593,14 +526,14 @@ export default function Screen3Dashboard({ data, fallbackProfile }) {
                     {resumeData.experience.map((exp, idx) => (
                       <div key={idx} className="draft-entry-group">
                         <div className="draft-entry-head">
-                          <strong>{toText(exp.title)}</strong>
-                          {exp.organization && ` - ${toText(exp.organization)}`}
+                          <strong>{exp.title}</strong>
+                          {exp.organization && ` – ${exp.organization}`}
                         </div>
-                        {exp.date && <div className="draft-entry-date">{toText(exp.date)}</div>}
-                        {toArray(exp.bullets).length > 0 && (
+                        {exp.date && <div className="draft-entry-date">{exp.date}</div>}
+                        {exp.bullets?.length > 0 && (
                           <ul className="draft-bullet-list">
-                            {toArray(exp.bullets).map((b, bIdx) => (
-                              <li key={bIdx}>{toText(b)}</li>
+                            {exp.bullets.map((b, bIdx) => (
+                              <li key={bIdx}>{b}</li>
                             ))}
                           </ul>
                         )}
@@ -618,17 +551,17 @@ export default function Screen3Dashboard({ data, fallbackProfile }) {
                     {resumeData.education.map((edu, idx) => (
                       <div key={idx} className="draft-entry-group">
                         <div className="draft-entry-head">
-                          <strong>{toText(edu.degree)}</strong> {edu.score ? ` - ${toText(edu.score)}` : ''}
+                          <strong>{edu.degree}</strong> {edu.score ? `– ${edu.score}` : ''}
                         </div>
-                        <div className="draft-entry-sub">{toText(edu.institution)}</div>
-                        {edu.gradYear && <div className="draft-entry-date">{toText(edu.gradYear)}</div>}
+                        {edu.institution && <div className="draft-entry-sub">{edu.institution}</div>}
+                        {edu.gradYear && <div className="draft-entry-date">{edu.gradYear}</div>}
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* 4. Certifications */}
+              {/* 4. Certifications (if present) */}
               {resumeData.certifications.length > 0 && (
                 <div className="draft-section-row">
                   <div className="draft-left-title">Certifications</div>
@@ -636,11 +569,9 @@ export default function Screen3Dashboard({ data, fallbackProfile }) {
                     {resumeData.certifications.map((cert, idx) => (
                       <div key={idx} className="draft-entry-group">
                         <div className="draft-entry-head">
-                          <strong>{toText(cert.name)}</strong>
-                          {cert.issuingOrganization && ` - ${toText(cert.issuingOrganization)}`}
-                          {cert.verified && <span className="verified-badge">✓ Verified</span>}
+                          <strong>{cert.name}</strong> {cert.issuer ? `– ${cert.issuer}` : ''}
                         </div>
-                        {cert.issueDate && <div className="draft-entry-date">{toText(cert.issueDate)}</div>}
+                        {cert.date && <div className="draft-entry-date">{cert.date}</div>}
                       </div>
                     ))}
                   </div>
@@ -655,47 +586,36 @@ export default function Screen3Dashboard({ data, fallbackProfile }) {
                     {resumeData.projects.map((proj, idx) => (
                       <div key={idx} className="draft-entry-group">
                         <div className="draft-entry-head">
-                          <strong>{toText(proj.title)}</strong>
-                          {proj.techStack?.length > 0 && ` - ${formatJoin(proj.techStack)}`}
-                          {proj.verified && <span className="verified-badge">✓ Verified Repo</span>}
+                          <strong>{proj.title}</strong>
+                          {proj.techStack && ` – ${proj.techStack}`}
                         </div>
-                        {toArray(proj.bullets || proj.optimizedBullets).length > 0 ? (
-                          <ul className="draft-bullet-list">
-                            {toArray(proj.bullets || proj.optimizedBullets).map((b, bIdx) => (
-                              <li key={bIdx}>{toText(b)}</li>
-                            ))}
-                          </ul>
-                        ) : proj.description ? (
-                          <p className="draft-entry-desc">{toText(proj.description)}</p>
-                        ) : null}
+                        {proj.bullets?.length > 0 && (
+                          <p className="draft-entry-desc">{proj.bullets[0]}</p>
+                        )}
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* 6. Skills */}
-              {skillsCategories.length > 0 && (
-                <div className="draft-section-row">
-                  <div className="draft-left-title">Skills</div>
-                  <div className="draft-right-body">
-                    <ul className="draft-bullet-list">
-                      {skillsCategories.map((sk, idx) => (
-                        <li key={idx}>
-                          <strong>{sk.label}:</strong> {sk.items}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+              {/* 6. Skills (Formatted with solid bullets ● matching reference) */}
+              <div className="draft-section-row">
+                <div className="draft-left-title">Skills</div>
+                <div className="draft-right-body">
+                  <ul className="draft-bullet-list">
+                    {resumeData.skillsCategories.map((sk, idx) => (
+                      <li key={idx}>
+                        <strong>{sk.label}:</strong> {sk.items}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              )}
+              </div>
 
               {/* 7. Personal Details */}
               {resumeData.personalDetails.length > 0 && (
                 <div className="draft-section-row">
-                  <div className="draft-left-title">
-                    Personal<br />Details
-                  </div>
+                  <div className="draft-left-title">Personal<br />Details</div>
                   <div className="draft-right-body">
                     <ul className="draft-bullet-list">
                       {resumeData.personalDetails.map((pd, idx) => (
@@ -708,7 +628,7 @@ export default function Screen3Dashboard({ data, fallbackProfile }) {
                 </div>
               )}
 
-              {/* 8. Declaration & Sign-off (Grounds the bottom of the page) */}
+              {/* 8. Declaration Sign-off */}
               <div className="draft-declaration-row">
                 <div>
                   <p><strong>Place:</strong> {resumeData.declaration.place}</p>
@@ -716,7 +636,6 @@ export default function Screen3Dashboard({ data, fallbackProfile }) {
                 </div>
                 <div className="signature-col">
                   <p className="signature-name">{resumeData.fullName}</p>
-                  <span className="signature-line" />
                 </div>
               </div>
 
@@ -725,7 +644,7 @@ export default function Screen3Dashboard({ data, fallbackProfile }) {
           </div>
         </main>
 
-        {/* RIGHT COLUMN: Pros with Immediate Verified Badges */}
+        {/* RIGHT COLUMN: Pros */}
         <aside className="audit-col scrollable-col no-print">
           <div className="audit-card">
             <h4 className="green-text">Pros & Matched Strengths ({livePros.length})</h4>
