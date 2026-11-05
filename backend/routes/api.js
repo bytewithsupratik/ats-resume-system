@@ -6,6 +6,7 @@ const axios = require('axios');
 
 const Profile = require('../models/Profile');
 const JobAnalysis = require('../models/JobAnalysis');
+const { checkLinkedInUrl, checkBasicInfo } = require('../util'); 
 
 const upload = multer({ 
     storage: multer.memoryStorage(),
@@ -116,16 +117,36 @@ router.post('/profiles/:id/analyze', async (req, res) => {
                 message: 'Ai microservice failed to evaluate the resume.'
             });    
         }
+        
         const aiData = aiResponse.data;
+        const pInfo = profile.personalInfo || {};
 
+        // 1. Run your deterministic checks
+        const linkedInCon = checkLinkedInUrl(pInfo.linkedinUrl);
+        const basicInfoCons = checkBasicInfo(pInfo);
+
+        // 2. Build the final cons list
+        const finalCons = [...basicInfoCons];
+        if (linkedInCon) {
+            finalCons.unshift(linkedInCon);
+        }
+        if (aiData.audit?.cons) {
+            finalCons.push(...aiData.audit.cons);
+        }
+
+        // 3. Save with finalCons
         const newAnalysis = new JobAnalysis ({
             profileId: profile._id,
             targetJob: {
-                jobTitle: aiData.targetJobTitle,
+                jobTitle: aiData.targetJobTitle || 'Professional',
                 rawJobDescription: jobDescription
             },
             scoring: aiData.scoring,
-            audit: aiData.audit,
+            audit: {
+                pros: aiData.audit?.pros || [],
+                cons: finalCons, // ✅ Pass our combined cons!
+                missingKeywords: aiData.audit?.missingKeywords || []
+            },
             tailoredResume: aiData.tailoredResume || aiData.tailoredContent
         });
         const savedAnalysis = await newAnalysis.save();
@@ -134,8 +155,8 @@ router.post('/profiles/:id/analyze', async (req, res) => {
             success: true,
             analysisId: savedAnalysis._id,
             profileId: profile._id,
-            scoring:savedAnalysis.scoring,
-            audit: savedAnalysis.audit,
+            scoring: savedAnalysis.scoring,
+            audit: savedAnalysis.audit, // ✅ Now contains LinkedIn + Basic Info cons!
             tailoredResume: savedAnalysis.tailoredResume
         });
     } catch (error) {
@@ -143,6 +164,50 @@ router.post('/profiles/:id/analyze', async (req, res) => {
         return res.status(500).json ({
             success: false,
             message: 'Failed to process ATS analysis.'
+        });
+    }
+});
+
+router.patch('/profiles/:id/linkedin', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { linkedinUrl } = req.body;
+
+        if (!linkedinUrl || !linkedinUrl.trim()) {
+            return res.status(400).json({
+                success: false,
+                message: 'A shortened LinkedIn URL is required.'
+            });
+        }
+
+        // Clean user input (strip https://, www., trailing slash)
+        const cleanUrl = linkedinUrl.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '').trim();
+
+        // Update profile in MongoDB
+        const updatedProfile = await Profile.findByIdAndUpdate(
+            id,
+            { $set: { 'personalInfo.linkedinUrl': cleanUrl } },
+            { new: true }
+        );
+
+        if (!updatedProfile) {
+            return res.status(404).json({
+                success: false,
+                message: 'Profile not found.'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'LinkedIn URL updated successfully.',
+            updatedUrl: cleanUrl,
+            profile: updatedProfile
+        });
+    } catch (error) {
+        console.error('Error updating LinkedIn URL:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update LinkedIn URL.'
         });
     }
 });

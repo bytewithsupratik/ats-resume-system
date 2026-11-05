@@ -4,12 +4,17 @@ const ProfileSchema = new mongoose.Schema(
     {
         personalInfo: {
             fullName: { type: String, default: '' },
-            email: { type: String, default: '', match: [/\S+@\S+\.\S+/, 'Please enter a valid email address']  },
+            email: { type: String, default: ''  },
             phone: { type: String, default: '' },
             location: { type: String, default: '' },
             linkedinUrl: { type: String, default: '' },
             portfolioUrl: { type: String, default: '' },
             summary: { type: String, default: '' }, 
+            dob: { type: String, default: '' },
+            gender: { type: String, default: '' },
+            nationality: { type: String, default: '' },
+            fatherName: { type: String, default: '' },
+            languages: { type: String, default: '' }
         },
 
         skills: {
