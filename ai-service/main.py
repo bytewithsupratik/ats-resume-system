@@ -4,48 +4,48 @@ import asyncio
 import time
 import traceback
 from fastapi import FastAPI, HTTPException
-from google import genai
-from google.genai import types
+from groq import AsyncGroq
 from dotenv import load_dotenv
 from schemas import ProfileSchemaObject, AnalysisResponseSchema, TailoredSummaryOutput, PrioritizedSkillsOutput, OptimizedProjectsOutput,AuditAndScoringOutput,Scoring,AuditFeedback,TailoredResumeContent
+from pydantic_core import to_jsonable_python
 
 load_dotenv()
-api_key = os.getenv("GEMINI_API_KEY")
+api_key = os.getenv("GROQ_API_KEY")
 
 if not api_key:
-    raise RuntimeError("GEMINI_API_KEY is missing from environment variables.")
+    raise RuntimeError("API_KEY is missing from environment variables.")
 
-client = genai.Client(api_key=api_key)
+client = AsyncGroq(api_key=api_key)
 app = FastAPI(title="ATS AI Microservice", version="1.0")
 
-MODELS = ["gemini-3.5-flash-lite", "gemini-3.8-flash"]
+MODELS = ["openai/gpt-oss-120b", "openai/gpt-oss-20b"]
 
-async def call_gemini_async(prompt: str, schema_class, temperature: float = 0.2):
-    last_exception = None
+async def _groq_structured(system_prompt: str, user_prompt: str, schema_class, temperature: float = 0.2):
+    clean_schema = to_jsonable_python(schema_class.model_json_schema())
+    schema_str = json.dumps(clean_schema)
+    full_system = f"{system_prompt}\n\nSTRICT REQUIREMENT: Output MUST be valid JSON matching this schema:\n{schema_str}"
+    last_err = None
     for model_name in MODELS:
-        for attempt in range(2):
-            try:
-                print(f"[*] Calling {model_name} (attempt {attempt + 1})...")
-                response = await client.aio.models.generate_content(
-                    model=model_name,
-                    contents=prompt,
-                    config=types.GenerateContentConfig(
-                        response_mime_type="application/json",
-                        response_schema=schema_class,
-                        temperature=temperature,
-                    ),
-                )
-                if response.text:
-                    return json.loads(response.text)
-                elif response.parsed:
-                    return response.parsed
-                raise ValueError("Empty response received from Gemini.")
-            except Exception as e:
-                last_exception = e
-                print(f"[!] Warning on {model_name}: {str(e)}")
-                await asyncio.sleep(1.5)
-    raise RuntimeError(f"All Gemini models/attempts failed. Last error: {last_exception}")
-
+        try:
+            print(f"[*] Calling {model_name}...")
+            response = await client.chat.completions.create(
+                model=model_name,
+                messages=[
+                    {"role": "system", "content": full_system},
+                    {"role": "user", "content": str(user_prompt)}
+                ],
+                response_format={"type": "json_object"},
+                temperature=temperature
+            )
+            raw_content = response.choices[0].message.content
+            return json.loads(raw_content)
+        except Exception as e:
+            last_err = e
+            print(f"[!] Warning on {model_name}: {e}")
+            await asyncio.sleep(1.0)
+            continue
+            
+    raise RuntimeError(f"All Groq models failed. Last error: {last_err}")
 @app.get("/")
 async def root():
     return {"message": "ATS AI Microservice is running successfully", "docs": "/docs"}
@@ -60,76 +60,31 @@ async def parse_linkedin(payload: dict):
     if not raw_text:
         raise HTTPException(status_code=400, detail="rawText is required.")
     
-    prompt = f"""Extract structured candidate profile details strictly matching the schema.
-    Do not hallucinate factual data.
-    Raw Text:
-    {raw_text}
-    """
-    return await call_gemini_async(prompt, ProfileSchemaObject, temperature=0.1)
+    system_prompt = "You are an expert HR data parser. Extract structured candidate profile details without hallucinating facts."
+    user_prompt = f"Extract all details into JSON from this raw LinkedIn text:\n{raw_text}"
+    
+    return await _groq_structured(system_prompt, user_prompt, ProfileSchemaObject, temperature=0.1)
 
 async def generate_summary(candidate_summary: str, skills: dict, jd: str):
-    prompt = f"""
-    You are an expert ATS Resume Summary Writer.
-    Candidate Current Summary / Background: "{candidate_summary}"
-    Candidate Top Skills: {json.dumps(skills)}
-    Target Job Description:
-    {jd}
-
-    TASK:
-    Write a concise, high-impact 2-3 sentence Professional Career Summary/Objective.
-    - Tailor it directly to the target role.
-    - Highlight matched strengths and core value proposition.
-    - Keep tone professional, authoritative, and ATS keyword-rich.
-    """
-    return await call_gemini_async(prompt, TailoredSummaryOutput, temperature=0.3)
+    system_prompt = "You are an expert ATS Resume Summary Writer. Write a 2-3 sentence high-impact career objective tailored to the target JD."
+    user_prompt = f"Candidate Current Summary: {candidate_summary}\nCandidate Skills: {json.dumps(skills)}\nTarget JD:\n{jd}"
+    
+    return await _groq_structured(system_prompt, user_prompt, TailoredSummaryOutput, temperature=0.3)
 
 async def generate_prioritized_skills(candidate_skills: dict, jd: str):
-    prompt = f"""
-    You are an ATS Keyword Strategist.
-    Candidate Verified Skills: {json.dumps(candidate_skills)}
-    Target Job Description:
-    {jd}
-
-    TASK:
-    Re-order and categorize the candidate's skills into:
-    - technical: programming languages, core web/software frameworks (prioritize JD keywords)
-    - tools: developer tools, platforms, databases, IDEs
-    - softSkills: communication, leadership, problem solving
-    RULE: Preserve candidate skills. Do not invent unverified technologies.
-    """
-    return await call_gemini_async(prompt, PrioritizedSkillsOutput, temperature=0.1)
+    system_prompt = "You are an ATS Keyword Strategist. Reorder and categorize candidate skills into technical, tools, and softSkills, prioritizing keywords from the JD without inventing unverified skills."
+    user_prompt = f"Candidate Skills: {json.dumps(candidate_skills)}\nTarget JD:\n{jd}"
+    return await _groq_structured(system_prompt, user_prompt, PrioritizedSkillsOutput, temperature=0.1)
 
 async def generate_optimized_projects(candidate_projects: list, jd: str):
-    prompt = f"""
-    You are an ATS Resume Project Optimizer.
-    Candidate Projects: {json.dumps(candidate_projects)}
-    Target Job Description:
-    {jd}
-
-    TASK:
-    Optimize each project's bullet points:
-    - Use Google X-Y-Z formula: "Accomplished [X] as measured by [Y], by doing [Z]".
-    - Start with strong action verbs (Architected, Engineered, Implemented, Streamlined).
-    - Align with skills and technologies mentioned in the JD.
-    - NEVER hallucinate new project titles or fake repositories.
-    """
-    return await call_gemini_async(prompt, OptimizedProjectsOutput, temperature=0.2)
+    system_prompt = "You are an ATS Resume Project Optimizer. Optimize each project's bullet points using Google's X-Y-Z formula with strong action verbs. NEVER hallucinate new project titles or fake links."
+    user_prompt = f"Candidate Projects: {json.dumps(candidate_projects)}\nTarget JD:\n{jd}"
+    return await _groq_structured(system_prompt, user_prompt, OptimizedProjectsOutput, temperature=0.2)
 
 async def generate_audit_and_score(profile_data: dict, jd: str):
-    prompt = f"""
-    You are an ATS Parser and Candidate Evaluator.
-    Candidate Profile: {json.dumps(profile_data)}
-    Target Job Description:
-    {jd}
-
-    TASK:
-    Conduct a gap analysis:
-    1. Overall Match Score (0 to 100) and breakdown (keywordMatchScore, relevanceScore, impactMetricScore, formattingStructureScore).
-    2. Pros: Matched candidate strengths relative to JD requirements.
-    3. Cons: Gaps, missing skills, or formatting risks (severity: "HIGH", "MEDIUM", or "LOW").
-    4. missingKeywords: Important keywords present in JD but absent in candidate profile.
-    """
-    return await call_gemini_async(prompt, AuditAndScoringOutput, temperature=0.1)
+    system_prompt = "You are an ATS Parser and Candidate Evaluator. Perform a rigorous gap analysis: calculate overallMatchScore (0-100), breakdown, pros, cons with severity (HIGH/MEDIUM/LOW), and missing keywords."
+    user_prompt = f"Candidate Profile: {json.dumps(profile_data)}\nTarget JD:\n{jd}"
+    return await _groq_structured(system_prompt, user_prompt, AuditAndScoringOutput, temperature=0.1)
 
 @app.post("/ai/analyze-and-tailor",response_model=AnalysisResponseSchema)
 async def analyse_and_tailor(payload:dict):
@@ -149,6 +104,7 @@ async def analyse_and_tailor(payload:dict):
         projects_res = await generate_optimized_projects(existing_projects, job__description)
         audit_res = await generate_audit_and_score(profile_data, job__description)
 
+        print(payload)
         return AnalysisResponseSchema(
             scoring=audit_res["scoring"],
             audit=AuditFeedback(
