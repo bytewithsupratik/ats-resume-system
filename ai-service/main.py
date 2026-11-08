@@ -82,8 +82,13 @@ async def generate_optimized_projects(candidate_projects: list, jd: str):
     return await _groq_structured(system_prompt, user_prompt, OptimizedProjectsOutput, temperature=0.2)
 
 async def generate_audit_and_score(profile_data: dict, jd: str):
-    system_prompt = "You are an ATS Parser and Candidate Evaluator. Perform a rigorous gap analysis: calculate overallMatchScore (0-100), breakdown, pros, cons with severity (HIGH/MEDIUM/LOW), and missing keywords."
-    user_prompt = f"Candidate Profile: {json.dumps(profile_data)}\nTarget JD:\n{jd}"
+    system_prompt = """You are an expert ATS Parser and Senior Technical Recruiter.
+CRITICAL EVALUATION RULES:
+1. EXPERIENCE HIERARCHY RULE: If the Job Description requires 'X years of experience' (e.g. minimum 3 years) and the candidate has MORE years of experience (e.g. 15 years), the candidate EXCEEDS the requirement. This is a MAJOR STRENGTH (PRO), NEVER a con or gap.
+2. DURATION IS NOT A KEYWORD: NEVER output numbers, years, or durations (e.g. '3 years', '5+ years') into 'missingKeywords'. 'missingKeywords' must ONLY contain concrete missing technical skills, frameworks, tools, or domain certifications.
+3. DEGREE EQUIVALENCIES: If candidate holds an advanced degree or equivalent research background matching the discipline, do not flag false gaps.
+4. Return an accurate gap analysis: overallMatchScore (0-100), breakdown, pros, cons with severity (HIGH/MEDIUM/LOW), and technical missing keywords."""
+    user_prompt = f"Candidate Profile:\n{json.dumps(profile_data)}\n\nTarget Job Description:\n{jd}"
     return await _groq_structured(system_prompt, user_prompt, AuditAndScoringOutput, temperature=0.1)
 
 @app.post("/ai/analyze-and-tailor",response_model=AnalysisResponseSchema)
