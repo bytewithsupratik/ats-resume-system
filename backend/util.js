@@ -1,66 +1,94 @@
 function checkLinkedInUrl(rawUrl) {
+  const tutorialVideoUrl = 'https://www.youtube.com/embed/oga5s3Yngc8';
+
   if (!rawUrl || typeof rawUrl !== 'string' || !rawUrl.trim()) {
     return {
       issue: 'Missing LinkedIn Profile URL',
       severity: 'MEDIUM',
-      suggestion: 'Shorten your LinkedIn profile URL and attach it to your resume header.',
+      suggestion: 'Add your custom shortened LinkedIn URL to your resume header.',
       actionType: 'LINKEDIN_URL_FIX',
-      videoUrl: 'https://youtu.be/oga5s3Yngc8?si=C5pl-yJ_vWoMdJ0K'
+      targetField: 'linkedin',
+      fieldLabel: 'LinkedIn Profile URL',
+      placeholder: 'e.g. linkedin.com/in/yourname',
+      videoUrl: tutorialVideoUrl
     };
   }
 
   const cleaned = rawUrl.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '').trim();
-
-  // 2. Detect default uncustomized URLs:
-  // - Contains auto-generated random trailing hex/numbers (e.g., -13552418b or -9b12a84)
-  // - Contains tracking query parameters (?trk=...)
-  // - Length exceeds 30 characters
-  const hasRandomHash = /-[a-f0-9]{6,12}$/i.test(cleaned);
+  const hasRandomHash = /-[a-f0-9]{7,}$/i.test(cleaned) || /-\d{6,}$/.test(cleaned);
   const hasQueryParams = cleaned.includes('?');
-  const isExcessivelyLong = cleaned.length > 30;
+  const isAbsurdlyLong = cleaned.length > 55;
 
-  if (hasRandomHash || hasQueryParams || isExcessivelyLong) {
+  if (hasRandomHash || hasQueryParams || isAbsurdlyLong) {
     return {
       issue: 'Uncustomized / Lengthy LinkedIn URL',
       severity: 'LOW',
-      suggestion: 'Your LinkedIn URL is uncustomized. Follow the video to create a clean slug, paste it below, and click Add LinkedIn.',
+      suggestion: 'Your LinkedIn URL contains default system numbers. Shorten it, paste your clean handle below, and click Apply.',
       actionType: 'LINKEDIN_URL_FIX',
-      videoUrl: 'https://youtu.be/oga5s3Yngc8?si=C5pl-yJ_vWoMdJ0K'
+      targetField: 'linkedin',
+      fieldLabel: 'Shortened LinkedIn URL',
+      placeholder: 'e.g. linkedin.com/in/yourname',
+      videoUrl: tutorialVideoUrl
     };
   }
 
-  // URL is already clean (e.g. linkedin.com/in/bibek-mandal) -> No con generated
   return null;
 }
 
-function checkBasicInfo(personalInfo = {}) {
+function checkBasicInfo(profile = {}) {
   const missingCons = [];
+  const pInfo = profile.personalInfo || {};
 
   const requiredFields = [
-    { key: 'fullName', label: 'Full Name', severity: 'HIGH' },
-    { key: 'phone', label: 'Phone Number', severity: 'HIGH' },
-    { key: 'location', label: 'Permanent Address', severity: 'MEDIUM' },
-    { key: 'githubUrl', label: 'GitHub Profile Link', severity: 'MEDIUM' },
-    { key: 'dob', label: 'Date of Birth', severity: 'MEDIUM' },
-    { key: 'gender', label: 'Gender', severity: 'LOW' },
-    { key: 'nationality', label: 'Nationality', severity: 'LOW' },
-    { key: 'fatherName', label: "Father's Name", severity: 'LOW' },
-    { key: 'languages', label: 'Languages Known', severity: 'LOW' }
+    { key: 'fullName', label: 'Full Name', severity: 'HIGH', placeholder: 'Enter Full Name' },
+    { key: 'phone', label: 'Phone Number', severity: 'HIGH', placeholder: '+91 XXXXXXXXXX' },
+    { key: 'location', label: 'Permanent Address', severity: 'MEDIUM', placeholder: 'City, State' },
+    { key: 'githubUrl', label: 'GitHub Profile Link', severity: 'MEDIUM', placeholder: 'github.com/your-username' },
+    { key: 'dob', label: 'Date of Birth', severity: 'MEDIUM', placeholder: 'DD/MM/YYYY' },
+    { key: 'gender', label: 'Gender', severity: 'LOW', placeholder: 'Male / Female' },
+    { key: 'nationality', label: 'Nationality', severity: 'LOW', placeholder: 'Indian' },
+    { key: 'fatherName', label: "Father's Name", severity: 'LOW', placeholder: "Father's Name" },
+    { key: 'languages', label: 'Languages Known', severity: 'LOW', placeholder: 'English, Hindi, Bengali' }
   ];
 
-  requiredFields.forEach(({ key, label, severity }) => {
-    const value = personalInfo[key];
+  requiredFields.forEach(({ key, label, severity, placeholder }) => {
+    const value = pInfo[key];
     if (!value || typeof value !== 'string' || !value.trim()) {
       missingCons.push({
         issue: `Missing ${label}`,
         severity: severity,
-        suggestion: `Please enter your ${label.toLowerCase()} to complete the required college placement details.`,
+        suggestion: `Provide your ${label.toLowerCase()} for the resume header/details.`,
         actionType: 'BASIC_INFO_FIX',
         targetField: key,
-        fieldLabel: label
+        fieldLabel: label,
+        placeholder: placeholder
       });
     }
   });
+
+  if (!Array.isArray(profile.certifications) || profile.certifications.length === 0) {
+    missingCons.push({
+      issue: 'Missing Certifications',
+      severity: 'LOW',
+      suggestion: 'Adding technical certifications validates your domain expertise to recruiters.',
+      actionType: 'BASIC_INFO_FIX',
+      targetField: 'certifications',
+      fieldLabel: 'Certification (Name - Issuer)',
+      placeholder: 'e.g. AWS Certified Developer - Amazon'
+    });
+  }
+
+  if (!Array.isArray(profile.projects) || profile.projects.length === 0) {
+    missingCons.push({
+      issue: 'Missing Technical Projects',
+      severity: 'HIGH',
+      suggestion: 'Add at least one technical project demonstrating your programming skills.',
+      actionType: 'BASIC_INFO_FIX',
+      targetField: 'projects',
+      fieldLabel: 'Project (Title - Stack)',
+      placeholder: 'e.g. College Lab App - Python, SQL'
+    });
+  }
 
   return missingCons;
 }

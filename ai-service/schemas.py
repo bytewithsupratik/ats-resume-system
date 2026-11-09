@@ -11,6 +11,11 @@ class PersonalInfo(BaseModel):
     portfolioUrl: Optional[str] = None
     summary: Optional[str] = None
 
+class AnalysisResponseSchema(BaseModel):
+    targetJobTitle: str = Field
+    scoring: Scoring
+    audit: AuditFeedback
+    tailoredContent: TailoredResumeContent
 class Skills(BaseModel):
     technical: List[str] = []
     tools: List[str] = []
@@ -37,6 +42,12 @@ class Education(BaseModel):
     gradYear: Optional[str] = None
     score: Optional[str] = None
 
+class ExperienceItem(BaseModel):
+    title: str
+    organization: Optional[str] = None
+    date: Optional[str] = None
+    description: Optional[str] = None
+
 class Certification(BaseModel):
     name: str
     issuingOrganization: Optional[str] = None
@@ -51,6 +62,7 @@ class Achievement(BaseModel):
 class ProfileSchemaObject(BaseModel):
     personalInfo: PersonalInfo
     skills: Skills
+    experience: List[ExperienceItem] = []
     projects: List[Project] = []
     education: List[Education] = []
     certifications: List[Certification] = []
@@ -101,6 +113,7 @@ class TailoredResumeContent(BaseModel):
     personalInfo: PersonalInfo
     tailoredSummary: str
     prioritizedSkills: Skills
+    experience: List[ExperienceItem] = []
     optimizedProjects: List[OptimizedProject]
     education: List[Education] = []
     certifications: List[Certification] = []

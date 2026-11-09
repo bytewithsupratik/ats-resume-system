@@ -2,76 +2,48 @@ const mongoose = require('mongoose');
 
 const JobAnalysisSchema = new mongoose.Schema(
     {
-        profileId: 
-        {
+        profileId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Profile',
             default: ''
         },
-
-        targetJob:
-        {
+        targetJob: {
             jobTitle: { type: String },
-            rawJobDescription: { type: String },
-            // extractedKeywords: 
-            // {
-            //     technicalSkills: [{ type: String }],
-            //     softSkills: [{ type: String }],
-            //     domainKnowledge: [{ type: String }]
-            // }
+            rawJobDescription: { type: String }
         },
-
-        scoring:
-        {
-            overallMatchScore: { type: Number, default: '' },
-            breakdown: 
-            {
+        scoring: {
+            overallMatchScore: { type: Number, default: 0 },
+            breakdown: {
                 keywordMatchScore: { type: Number, default: 0 },
                 relevanceScore: { type: Number, default: 0 },
                 impactMetricScore: { type: Number, default: 0 },
                 formattingStructureScore: { type: Number, default: 0 }
             }
         },
-
-        audit: 
-        {
-            pros:
-            [
+        audit: {
+            pros: [
                 {
                     point: { type: String },
                     category: { type: String, default: 'General' }
                 }
             ],
-            cons: 
-            [
+            cons: [
                 {
                     issue: { type: String },
-                    severity: { type: String, enum: ['LOW', 'MEDIUM', 'HIGH'], default: 'MEDIUM' },
-                    suggestion: { type: String, default: '' }
+                    severity: { type: String, default: 'MEDIUM' },
+                    suggestion: { type: String, default: '' },
+                    actionType: { type: String, default: '' },
+                    targetField: { type: String, default: '' },
+                    fieldLabel: { type: String, default: '' },
+                    placeholder: { type: String, default: '' },
+                    videoUrl: { type: String, default: '' }
                 }
             ],
             missingKeywords: [{ type: String }]
         },
-
-        tailoredResume: 
-        {
-            tailoredSummary: { type: String, default: '' },
-            prioritizedSkills: 
-            {
-                technicalSkills: [{ type: String }],
-                tools: [{ type: String }],
-                softSkills: [{ type: String }]
-            },
-            optimizedProjects:
-            [
-                {
-                    title: { type: String, default: '' },
-                    techStack: [{ type: String }],
-                    liveLink: { type: String, default: '' },
-                    repoLink: { type: String, default: '' },
-                    optimizedDescription: [{ type: String }]
-                }
-            ]
+        tailoredResume: {
+            type: mongoose.Schema.Types.Mixed,
+            default: {}
         }        
     },
     {

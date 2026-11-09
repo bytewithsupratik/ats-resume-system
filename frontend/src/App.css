@@ -74,7 +74,6 @@ body {
   flex-direction: column;
 }
 
-/* Common Primary Button */
 .btn-primary {
   background: #2563eb;
   color: #ffffff;
@@ -91,7 +90,6 @@ body {
   background: #1d4ed8;
 }
 
-/* Alerts & Loaders */
 .error-box {
   background: #fef2f2;
   color: #991b1b;
@@ -151,9 +149,7 @@ body {
   width: 100%;
 }
 
-.gateway-hero {
-  margin-bottom: 40px;
-}
+.gateway-hero { margin-bottom: 40px; }
 
 .gateway-title {
   font-family: Georgia, Cambria, "Times New Roman", serif;
@@ -196,9 +192,7 @@ body {
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.05);
 }
 
-.card-icon-wrapper {
-  margin-bottom: 20px;
-}
+.card-icon-wrapper { margin-bottom: 20px; }
 
 .card-heading {
   font-family: Georgia, Cambria, "Times New Roman", serif;
@@ -232,13 +226,6 @@ body {
   font-weight: 500;
 }
 
-.check-bubble {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
 .btn-outline-blue {
   width: 100%;
   background: #f4f8fe;
@@ -253,10 +240,7 @@ body {
   transition: all 0.15s ease;
 }
 
-.btn-outline-blue:hover {
-  background: #2563eb;
-  color: #ffffff;
-}
+.btn-outline-blue:hover { background: #2563eb; color: #ffffff; }
 
 .btn-solid-dark {
   width: 100%;
@@ -272,12 +256,10 @@ body {
   transition: background 0.15s ease;
 }
 
-.btn-solid-dark:hover {
-  background: #172a46;
-}
+.btn-solid-dark:hover { background: #172a46; }
 
 /* ========================================================
-   SCREEN 2: SPACIOUS FORM LAYOUT
+   SCREEN 2: FORM LAYOUT
    ======================================================== */
 .form-wrapper {
   max-width: 880px;
@@ -339,17 +321,10 @@ body {
   padding: 36px 20px;
   text-align: center;
   background-color: #faf9f5;
-  transition: all 0.2s ease;
+  cursor: pointer;
 }
 
-.file-dropzone:hover {
-  border-color: #2563eb;
-  background-color: #f0f7ff;
-}
-
-.file-dropzone input {
-  display: none;
-}
+.file-dropzone input { display: none; }
 
 .file-drop-label {
   display: flex;
@@ -359,20 +334,9 @@ body {
   cursor: pointer;
 }
 
-.file-icon-glyph {
-  font-size: 2.2rem;
-}
-
-.file-action-title {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #1e3a8a;
-}
-
-.file-sub-info {
-  font-size: 0.82rem;
-  color: #64748b;
-}
+.file-icon-glyph { font-size: 2.2rem; }
+.file-action-title { font-size: 1rem; font-weight: 700; color: #1e3a8a; }
+.file-sub-info { font-size: 0.82rem; color: #64748b; }
 
 .input-grid {
   display: grid;
@@ -434,11 +398,6 @@ input:focus, .form-textarea:focus {
   cursor: pointer;
   font-size: 0.82rem;
   font-weight: 600;
-  color: #0f172a;
-}
-
-.btn-small:hover {
-  background: #e2e8f0;
 }
 
 .btn-del {
@@ -480,11 +439,11 @@ input:focus, .form-textarea:focus {
 }
 
 /* ========================================================
-   SCREEN 3: 3-COLUMN STUDIO LAYOUT & INDEPENDENT SCROLLING
+   SCREEN 3: 3-COLUMN STUDIO LAYOUT & BALANCED DUAL SCROLLERS
    ======================================================== */
 .three-col-layout {
   display: grid;
-  grid-template-columns: 290px minmax(580px, 1fr) 290px;
+  grid-template-columns: 295px minmax(580px, 1fr) 295px;
   gap: 18px;
   flex: 1;
   min-height: 0;
@@ -492,22 +451,21 @@ input:focus, .form-textarea:focus {
   align-items: stretch;
 }
 
-/* Left column container */
+/* Left column container: Strictly locked to viewport */
 .audit-col.left-col {
   display: flex;
   flex-direction: column;
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  gap: 12px;
+  gap: 10px;
 }
 
-/* Fixed ATS Match Score card */
 .metric-box {
   background: #ffffff;
   border: 1px solid #eae7dd;
   border-radius: 12px;
-  padding: 16px;
+  padding: 14px;
   flex-shrink: 0;
 }
 
@@ -519,7 +477,7 @@ input:focus, .form-textarea:focus {
 }
 
 .big-score {
-  font-size: 38px;
+  font-size: 36px;
   font-weight: 800;
   color: #2563eb;
   text-align: center;
@@ -543,12 +501,12 @@ input:focus, .form-textarea:focus {
 .green-text { color: #16a34a; font-size: 0.95rem; }
 .red-text { color: #dc2626; font-size: 0.95rem; }
 
-/* Cons Card */
+/* 1. Cons Card: Takes the remaining flexible middle space */
 .audit-card.cons-card {
   background: #ffffff;
   border: 1px solid #eae7dd;
   border-radius: 12px;
-  padding: 14px 16px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -556,33 +514,22 @@ input:focus, .form-textarea:focus {
   overflow: hidden;
 }
 
-.audit-card.cons-card .red-text {
-  flex-shrink: 0;
-}
-
-/* Only Cons list scrolls */
 .cons-list {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 9px;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 4px;
-  overscroll-behavior: contain;
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 transparent;
 }
 
-.cons-list::-webkit-scrollbar {
-  width: 5px;
-}
-.cons-list::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
-}
+.cons-list::-webkit-scrollbar { width: 5px; }
+.cons-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 
 .con-row {
   background: #fef2f2;
@@ -600,49 +547,13 @@ input:focus, .form-textarea:focus {
   border-left-color: #16a34a !important;
 }
 
-.badge-high {
-  background: #dc2626;
-  color: #ffffff;
-  font-size: 8px;
-  font-weight: bold;
-  padding: 2px 4px;
-  border-radius: 3px;
-  height: fit-content;
-}
+.badge-high { background: #dc2626; color: #fff; font-size: 8px; font-weight: bold; padding: 2px 4px; border-radius: 3px; height: fit-content; }
+.badge-medium { background: #f59e0b; color: #fff; font-size: 8px; font-weight: bold; padding: 2px 4px; border-radius: 3px; height: fit-content; }
+.badge-low { background: #64748b; color: #fff; font-size: 8px; font-weight: bold; padding: 2px 4px; border-radius: 3px; height: fit-content; }
 
-.badge-medium {
-  background: #f59e0b;
-  color: #ffffff;
-  font-size: 8px;
-  font-weight: bold;
-  padding: 2px 4px;
-  border-radius: 3px;
-  height: fit-content;
-}
-
-.badge-low {
-  background: #64748b;
-  color: #ffffff;
-  font-size: 8px;
-  font-weight: bold;
-  padding: 2px 4px;
-  border-radius: 3px;
-  height: fit-content;
-}
-
-.con-issue {
-  color: #0f172a;
-  margin-bottom: 2px;
-}
-
-.con-suggestion {
-  color: #475569;
-  font-size: 0.75rem;
-}
-
-.con-action-bar {
-  margin-top: 6px;
-}
+.con-issue { color: #0f172a; margin-bottom: 2px; }
+.con-suggestion { color: #475569; font-size: 0.75rem; }
+.con-action-bar { margin-top: 6px; }
 
 .con-action-btn {
   display: inline-block;
@@ -651,22 +562,13 @@ input:focus, .form-textarea:focus {
   color: #1d4ed8;
   font-size: 10.5px;
   font-weight: 700;
-  padding: 3px 8px;
+  padding: 4px 8px;
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
-.con-action-btn:hover {
-  background: #2563eb;
-  color: #ffffff;
-}
-
-.resolved-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+.con-action-btn:hover { background: #2563eb; color: #ffffff; }
 
 .badge-resolved {
   font-size: 10px;
@@ -678,28 +580,114 @@ input:focus, .form-textarea:focus {
   border: 1px solid #bbf7d0;
 }
 
-.btn-undo {
-  background: transparent;
+/* 2. Interactive Dialog Box & Spacious Video Player */
+.con-dialog-box {
+  background: #ffffff;
+  border: 1.5px solid #bfdbfe;
+  border-radius: 6px;
+  padding: 10px;
+  margin-top: 8px;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.14);
+}
+
+.video-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.video-header-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: #1e3a8a;
+}
+
+.video-direct-link {
+  font-size: 9.5px;
+  color: #2563eb;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.con-video-wrapper {
+  position: relative;
+  width: 100%;
+  height: 185px;
+  min-height: 185px;
+  border-radius: 5px;
+  overflow: hidden;
+  margin-bottom: 8px;
+  background: #000000;
+}
+
+.con-video-wrapper iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.con-dialog-input {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 11px;
   border: 1px solid #cbd5e1;
-  color: #64748b;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  outline: none;
+}
+
+.con-dialog-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.con-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.btn-dialog-cancel {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
   font-size: 10px;
   font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 3px;
+  padding: 4px 8px;
+  border-radius: 4px;
   cursor: pointer;
 }
 
-.btn-undo:hover {
-  background: #f1f5f9;
-  color: #0f172a;
+.btn-dialog-apply {
+  background: #16a34a;
+  border: none;
+  color: #ffffff;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
-/* Keywords Card */
+.btn-dialog-apply:hover { background: #15803d; }
+
+/* 3. Missing Keywords Box: Fixed 175px Height with Internal Scrollbar */
 .audit-card.keywords-card {
   background: #ffffff;
   border: 1px solid #eae7dd;
   border-radius: 12px;
-  padding: 14px 16px;
+  padding: 12px 14px;
+  height: 175px;
+  max-height: 175px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.audit-card.keywords-card h4 {
+  margin-bottom: 6px;
   flex-shrink: 0;
 }
 
@@ -707,7 +695,16 @@ input:focus, .form-textarea:focus {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
 }
+
+.chips::-webkit-scrollbar { width: 4px; }
+.chips::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 
 .chip {
   background: #fee2e2;
@@ -718,6 +715,7 @@ input:focus, .form-textarea:focus {
   border-radius: 4px;
   display: inline-flex;
   align-items: center;
+  height: fit-content;
 }
 
 .chip.chip-clickable {
@@ -730,19 +728,12 @@ input:focus, .form-textarea:focus {
   background: #ef4444;
   color: #ffffff;
   border-style: solid;
-  transform: translateY(-1px);
 }
 
 .chip.chip-added {
   background: #dcfce7 !important;
   color: #166534 !important;
   border: 1px solid #16a34a;
-  cursor: default;
-}
-
-.clean-chip {
-  font-size: 0.8rem;
-  color: #16a34a;
 }
 
 /* Right Column: Pros */
@@ -756,13 +747,8 @@ input:focus, .form-textarea:focus {
   scrollbar-color: #cbd5e1 transparent;
 }
 
-.audit-col.right-col::-webkit-scrollbar {
-  width: 5px;
-}
-.audit-col.right-col::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
-}
+.audit-col.right-col::-webkit-scrollbar { width: 5px; }
+.audit-col.right-col::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 
 .pros-list {
   list-style: none;
@@ -778,22 +764,12 @@ input:focus, .form-textarea:focus {
   border-radius: 4px;
 }
 
-.pro-card-item.pro-resolved-item {
-  background: #ecfdf5;
-  border-left: 3px solid #10b981;
-  animation: fadeIn 0.2s ease-in;
-}
-
 .pro-category-tag {
   display: inline-block;
   font-size: 0.72rem;
   font-weight: 700;
   color: #16a34a;
   margin-bottom: 2px;
-}
-
-.pro-category-tag.resolved-tag {
-  color: #059669;
 }
 
 .pro-point {
@@ -803,7 +779,7 @@ input:focus, .form-textarea:focus {
 }
 
 /* ==========================================================================
-   CENTER COLUMN: EXACT DRAFT(1).PDF BLUEPRINT (LETTER-SIZE 612 × 792 PT)
+   CENTER COLUMN: EXACT RESUME BLUEPRINT (STRICT 1-PAGE & LEFT-STUCK BANNER)
    ========================================================================== */
 .resume-col-center {
   background: #cbd5e1;
@@ -814,7 +790,7 @@ input:focus, .form-textarea:focus {
   align-items: center;
   height: 100%;
   min-height: 0;
-  overflow: hidden; /* No internal scrollbars */
+  overflow: hidden;
   position: relative;
 }
 
@@ -823,50 +799,55 @@ input:focus, .form-textarea:focus {
   justify-content: center;
   align-items: center;
   flex-shrink: 0;
-  transition: transform 0.1s ease-out;
 }
 
-/* Exact Letter Document Blueprint (612 × 792 pt proportions) */
+/* Strict Letter Document Blueprint (612 × 792 pt dimensions - Guaranteed 1 Page) */
 .draft-exact-page {
   background: #ffffff;
   color: #000000;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   width: 612px;
-  min-height: 792px;
+  height: 792px;
+  max-height: 792px;
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.14);
   box-sizing: border-box;
-  padding: 24px 28px 20px;
+  padding: 22px 26px 20px 36px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  overflow: visible;
+  overflow: hidden;
 }
 
-/* Header */
+/* Header Grid */
 .draft-header-grid {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 14px;
-  gap: 12px;
+  margin-bottom: 16px;
+  gap: 16px;
   flex-shrink: 0;
 }
 
+/* Stuck Left Sized Blue Banner: Single line designation, shifted left */
 .draft-blue-banner {
   background-color: #0066ff;
   color: #ffffff;
-  padding: 16px 20px;
-  width: 58%;
+  padding: 16px 22px;
+  width: max-content;
+  max-width: 65%;
   box-sizing: border-box;
+  white-space: nowrap;
+  margin-left: -14px;
 }
 
 .draft-candidate-name {
-  font-size: 20pt;
+  font-size: 19pt;
   font-weight: 700;
   color: #ffffff;
-  margin-bottom: 2px;
+  margin-bottom: 3px;
   line-height: 1.1;
   letter-spacing: -0.3px;
+  white-space: nowrap;
 }
 
 .draft-candidate-role {
@@ -875,14 +856,15 @@ input:focus, .form-textarea:focus {
   color: #ffffff;
   margin: 0;
   line-height: 1.15;
+  white-space: nowrap;
 }
 
 .draft-contact-list {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 3px;
-  width: 42%;
+  gap: 3.5px;
+  width: 35%;
   flex-shrink: 0;
 }
 
@@ -891,56 +873,40 @@ input:focus, .form-textarea:focus {
   align-items: center;
   justify-content: flex-end;
   gap: 6px;
-  font-size: 7.8pt;
+  font-size: 8pt;
   color: #111827;
   text-align: right;
   line-height: 1.2;
 }
 
-.draft-contact-line.location-line {
-  align-items: flex-start;
-}
+.contact-text { font-weight: 400; }
+.contact-icon { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.contact-icon svg { width: 12px; height: 12px; }
 
-.contact-text {
-  font-weight: 400;
-}
-
-.contact-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.contact-icon svg {
-  width: 12px;
-  height: 12px;
-}
-
-/* Body: Continuous Yellow Vertical Line */
+/* Body: Yellow Spine */
 .draft-body-container {
   display: flex;
   flex-direction: column;
   border-left: 3.5px solid #ffd000;
-  padding-left: 12px;
-  gap: 10px;
+  padding-left: 14px;
+  gap: 11px;
   flex: 1;
+  justify-content: flex-start;
 }
 
-/* Strict 2-Column Section Grid: 125px Section Title, 1fr Content */
 .ref-grid-row {
   display: grid;
   grid-template-columns: 125px 1fr;
-  gap: 14px;
+  gap: 16px;
   align-items: start;
+  margin-bottom: 2px;
 }
 
 .ref-grid-title {
   color: #0066ff;
   font-weight: 700;
   font-size: 10pt;
-  line-height: 1.25;
-  text-align: left;
+  line-height: 1.2;
 }
 
 .ref-grid-content {
@@ -949,177 +915,32 @@ input:focus, .form-textarea:focus {
   line-height: 1.35;
 }
 
-.body-paragraph {
-  margin: 0;
-  line-height: 1.35;
-}
+.body-paragraph { margin: 0; line-height: 1.35; }
+.entry-box { margin-bottom: 3px; }
+.entry-heading strong { font-weight: 700; }
+.entry-sub { font-size: 0.95em; color: #111827; margin-top: 1px; }
+.entry-date { font-size: 0.9em; color: #4b5563; margin-top: 1px; }
+.entry-desc { font-size: 0.95em; color: #111827; margin-top: 2px; line-height: 1.3; }
 
-.entry-box {
-  margin-bottom: 4px;
-}
+.bullet-list { list-style-type: disc; margin: 0; padding-left: 14px; }
+.bullet-list li { margin-bottom: 2px; line-height: 1.3; }
+.bullet-list li strong { font-weight: 700; }
 
-.entry-box:last-child {
-  margin-bottom: 0;
-}
-
-.entry-heading {
-  color: #000000;
-}
-
-.entry-heading strong {
-  font-weight: 700;
-}
-
-.entry-sub {
-  font-size: 0.95em;
-  color: #111827;
-  margin-top: 1px;
-}
-
-.entry-date {
-  font-size: 0.9em;
-  color: #4b5563;
-  margin-top: 1px;
-}
-
-.entry-desc {
-  font-size: 0.95em;
-  color: #111827;
-  margin-top: 2px;
-  line-height: 1.3;
-}
-
-/* Solid Bullet Dots Matching Reference */
-.bullet-list {
-  list-style-type: disc;
-  margin: 0;
-  padding-left: 14px;
-}
-
-.bullet-list li {
-  margin-bottom: 2px;
-  line-height: 1.3;
-}
-
-.bullet-list li strong {
-  font-weight: 700;
-}
-
-/* Footer: Place/Date (Left) and Candidate Signature (Right) */
 .draft-footer-row {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
   font-size: 8pt;
   color: #334155;
-  margin-top: 14px;
+  margin-top: 12px;
   padding-top: 6px;
   flex-shrink: 0;
 }
 
-.footer-meta p {
-  margin: 0;
-  line-height: 1.3;
-}
+.footer-signature p { margin: 0; font-weight: 700; color: #000000; font-size: 9pt; }
 
-.footer-signature p {
-  margin: 0;
-  font-weight: 700;
-  color: #000000;
-  font-size: 9pt;
-}
-
-/* ========================================================
-   VIEWPORT LOCK (DESKTOP)
-   ======================================================== */
-@media (min-width: 1025px) {
-  .app-shell.dashboard-view {
-    height: 100vh;
-    max-height: 100vh;
-    overflow: hidden;
-  }
-
-  .app-shell.dashboard-view .content-area {
-    margin: 0 auto;
-    height: calc(100vh - 60px);
-    overflow: hidden;
-  }
-
-  .results-page {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    overflow: hidden;
-  }
-}
-
-/* Responsive Fallback (Mobile / Tablet) */
-@media (max-width: 1024px) {
-  .top-nav {
-    padding: 10px 20px;
-    height: auto;
-  }
-
-  .nav-container {
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-
-  .content-area {
-    padding: 12px;
-  }
-
-  .three-col-layout {
-    display: flex;
-    flex-direction: column;
-    height: auto;
-    gap: 16px;
-  }
-
-  .audit-col.left-col {
-    height: auto;
-    overflow: visible;
-  }
-
-  .audit-card.cons-card {
-    height: auto;
-    overflow: visible;
-  }
-
-  .cons-list {
-    max-height: 380px;
-    overflow-y: auto;
-  }
-
-  .resume-col-center {
-    height: auto;
-    overflow: visible;
-    padding: 8px 0;
-  }
-
-  .resume-scaler-wrap {
-    width: 100%;
-  }
-
-  .draft-exact-page {
-    width: 100%;
-    min-height: auto;
-  }
-
-  .audit-col.right-col {
-    height: auto;
-    overflow: visible;
-  }
-}
-
-/* ========================================================
-   STRICT 1-PAGE LETTER PRINT ENGINE (MATCHING 612 × 792 PT)
-   ======================================================== */
-@page {
-  size: letter portrait;
-  margin: 0;
-}
+/* Print Styles */
+@page { size: letter portrait; margin: 0; }
 
 @media print {
   html, body {
@@ -1140,9 +961,7 @@ input:focus, .form-textarea:focus {
     display: block !important;
   }
 
-  .no-print {
-    display: none !important;
-  }
+  .no-print { display: none !important; }
 
   .resume-col-center {
     background: transparent !important;
@@ -1150,11 +969,9 @@ input:focus, .form-textarea:focus {
     margin: 0 !important;
     width: 612pt !important;
     height: 792pt !important;
-    overflow: hidden !important;
     position: static !important;
   }
 
-  /* Disable screen scaling for print */
   .resume-scaler-wrap {
     transform: none !important;
     display: block !important;
@@ -1165,19 +982,11 @@ input:focus, .form-textarea:focus {
     box-shadow: none !important;
     border: none !important;
     width: 612pt !important;
-    min-height: 792pt !important;
+    height: 792pt !important;
     max-height: 792pt !important;
-    padding: 24pt 28pt 20pt !important;
+    padding: 22pt 26pt 20pt 36pt !important;
     margin: 0 !important;
-    overflow: hidden !important;
     page-break-after: avoid !important;
-    page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
-
-  .draft-candidate-name { font-size: 24pt !important; }
-  .draft-candidate-role { font-size: 12pt !important; }
-  .draft-contact-line { font-size: 8pt !important; }
-  .ref-grid-title { font-size: 10.5pt !important; width: 125pt !important; }
-  .ref-grid-content { font-size: 8.8pt !important; }
 }
