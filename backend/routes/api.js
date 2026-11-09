@@ -15,6 +15,31 @@ const upload = multer({
 
 const AI_SERVICE_URL = (process.env.AI_SERVICE_URL || 'http://localhost:8000').trim().replace(/\/$/, '');
 
+function extractCleanJobTitle(jdText = '', aiTitle = '') {
+    if (aiTitle && !/^(about the job|job description|target role|professional|overview|ugc norms)$/i.test(aiTitle.trim())) {
+        return aiTitle.trim();
+    }
+
+    const lines = jdText.split('\n').map(l => l.trim()).filter(Boolean);
+    
+    for (const line of lines) {
+        const match = line.match(/^(?:job title|role|position|designation|hiring for)\s*[:\-]\s*(.+)$/i);
+        if (match && match[1]) {
+            const candidate = match[1].trim();
+            if (!/about the job|ugc/i.test(candidate)) return candidate.slice(0, 45);
+        }
+    }
+
+    const titleRegex = /\b(?:frontend|backend|full[\s-]?stack|software|web|react|node|python|java|systems?|data|machine learning|ai|devops|cloud|qa|test|assistant professor|lecturer)\s+(?:developer|engineer|architect|lead|specialist|consultant|intern|educator|professor)\b/i;
+    for (const line of lines) {
+        if (/about the job|ugc/i.test(line)) continue;
+        const match = line.match(titleRegex);
+        if (match) return match[0].split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    }
+
+    return 'Full Stack - Web Developer';
+}
+
 router.post('/profiles/manual', async (req, res) => {
     try {
         const newProfile = new Profile(req.body);
@@ -54,7 +79,6 @@ router.post(['/profiles/:id/analyze', '/profiles/:id/analyse'], async (req, res)
         const profile = await Profile.findById(id);
         if (!profile) return res.status(404).json({ success: false, message: 'Profile not found.' });
 
-        // AI Microservice Call
         const aiResponse = await axios.post(`${AI_SERVICE_URL}/ai/analyze-and-tailor`, {
             profileData: profile,
             jobDescription: jobDescription
@@ -63,25 +87,51 @@ router.post(['/profiles/:id/analyze', '/profiles/:id/analyse'], async (req, res)
         const aiData = aiResponse.data;
         const pInfo = profile.personalInfo || {};
 
-        // Run Deterministic Checks
+        // 1. Run deterministic checks
         const linkedInCon = checkLinkedInUrl(pInfo.linkedinUrl);
-        const basicInfoCons = checkBasicInfo(pInfo);
+        const basicInfoCons = checkBasicInfo(profile.toObject());
+
+        // 2. Filter out false experience gaps, generic personal details, & UGC salary noise
+        const rawAiCons = aiData.audit?.cons || [];
+        const filteredAiCons = rawAiCons.filter(c => {
+            const text = `${c.issue || ''} ${c.suggestion || ''}`.toLowerCase();
+            if (text.includes('personal detail') || text.includes('contact information')) return false;
+            if (text.includes('salary') || text.includes('ugc')) return false;
+            if (/\b(\d+\+?\s*(?:to\s*\d+\s*)?years?|\d+\s*yrs?)\b/i.test(text) && text.includes('experience')) return false;
+            return true;
+        });
+
+        // 3. Filter durations from missing keywords
+        const filteredKeywords = (aiData.audit?.missingKeywords || []).filter(kw => {
+            return !/\b(\d+\+?\s*years?|\d+\s*yrs?|experience|salary|ugc)\b/i.test(kw);
+        });
 
         const finalCons = [...basicInfoCons];
         if (linkedInCon) finalCons.unshift(linkedInCon);
-        if (aiData.audit?.cons) finalCons.push(...aiData.audit.cons);
+        finalCons.push(...filteredAiCons);
+
+        // 4. Extract clean job title (Never "About the job")
+        const targetJobTitle = extractCleanJobTitle(jobDescription, aiData.targetJobTitle);
+
+        // 5. Sanitize summary from salary / UGC norms
+        if (aiData.tailoredContent?.tailoredSummary) {
+            aiData.tailoredContent.tailoredSummary = aiData.tailoredContent.tailoredSummary
+                .replace(/salary\s*(as\s*per\s*)?ugc\s*norms/gi, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
 
         const newAnalysis = new JobAnalysis({
             profileId: profile._id,
             targetJob: {
-                jobTitle: aiData.targetJobTitle || 'Professional',
+                jobTitle: targetJobTitle,
                 rawJobDescription: jobDescription
             },
             scoring: aiData.scoring,
             audit: {
                 pros: aiData.audit?.pros || [],
                 cons: finalCons,
-                missingKeywords: aiData.audit?.missingKeywords || []
+                missingKeywords: filteredKeywords
             },
             tailoredResume: aiData.tailoredResume || aiData.tailoredContent
         });
@@ -91,11 +141,13 @@ router.post(['/profiles/:id/analyze', '/profiles/:id/analyse'], async (req, res)
             success: true,
             analysisId: savedAnalysis._id,
             profileId: profile._id,
+            targetJob: savedAnalysis.targetJob,
             scoring: savedAnalysis.scoring,
             audit: savedAnalysis.audit,
             tailoredResume: savedAnalysis.tailoredResume
         });
     } catch (error) {
+        console.error('Analysis error:', error);
         res.status(500).json({ success: false, message: 'Analysis failed.' });
     }
 });

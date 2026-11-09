@@ -5,7 +5,6 @@ const toArray = (val) => (Array.isArray(val) ? val.filter(Boolean) : val ? [val]
 const toText = (val) => (typeof val === 'string' ? val.trim() : val != null ? String(val) : '');
 const cleanUrl = (url) => (typeof url === 'string' ? url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '') : '');
 
-// Unambiguous field classifier (Checks targetField first, then issue title)
 const resolveTarget = (con) => {
   if (con.targetField) return con.targetField;
   const issue = (con.issue || '').toLowerCase();
@@ -20,6 +19,9 @@ const resolveTarget = (con) => {
   if (issue.includes('linkedin')) return 'linkedin';
   if (issue.includes('github')) return 'githubUrl';
   if (issue.includes('name') && !issue.includes('father')) return 'fullName';
+  if (issue.includes('certif')) return 'certifications';
+  if (issue.includes('project')) return 'projects';
+  if (issue.includes('experience') || issue.includes('teaching')) return 'experience';
   if (issue.includes('phd') || issue.includes('degree') || issue.includes('m.tech') || issue.includes('b.tech')) return 'education';
   if (issue.includes('skill')) return 'skill';
   return 'general';
@@ -31,27 +33,55 @@ const buildReferenceResume = (data, fallbackProfile) => {
   const profile = fallbackProfile || root.profileData || root.profile || {};
   const personal = profile.personalInfo || tailored.personalInfo || {};
 
+  const designation = toText(
+    root.targetJob?.jobTitle || 
+    tailored.targetJobTitle || 
+    personal.title || 
+    'Professional'
+  );
+
+  // Experience Extraction & Total Years calculation
+  const rawExp = toArray(tailored.experience || profile.experience);
+  const isFresher = rawExp.length === 0;
+  const totalExperienceYears = isFresher ? "0 Years (Fresher)" : `${rawExp.length >= 3 ? '3+' : rawExp.length} Years of Working Experience`;
+
+  // Education Filter: Strictly 12th onwards (Exclude 10th and early schooling)
+  const rawEducation = toArray(tailored.education || profile.education);
+  const filteredEducation = rawEducation
+    .map((edu) => ({
+      degree: toText(edu.degree),
+      score: toText(edu.score || edu.gpa),
+      institution: toText(edu.institution),
+      gradYear: toText(edu.gradYear || edu.duration)
+    }))
+    .filter((edu) => {
+      const text = `${edu.degree} ${edu.institution}`.toLowerCase();
+      if (
+        text.includes('10th') ||
+        text.includes('matric') ||
+        text.includes('secondary') ||
+        text.includes('high school') ||
+        text.includes('class x') ||
+        text.includes('ssc') ||
+        (text.includes('school') && !text.includes('university') && !text.includes('college') && !text.includes('institute') && !text.includes('higher secondary') && !text.includes('intermediate'))
+      ) {
+        return false;
+      }
+      return true;
+    });
+
   return {
     fullName: toText(personal.fullName),
-    designation: toText(personal.title || personal.headline || root.targetJob?.jobTitle || 'Full Stack - Web Developer'),
+    designation,
     email: toText(personal.email),
     phone: toText(personal.phone),
     location: toText(personal.location),
     linkedin: cleanUrl(personal.linkedinUrl),
     github: cleanUrl(personal.githubUrl),
     summary: toText(tailored.tailoredSummary || personal.summary),
-    experience: toArray(tailored.experience || profile.experience).map((e) => ({
-      title: toText(e.title || e.role),
-      organization: toText(e.organization || e.company),
-      date: toText(e.date || e.duration),
-      desc: toArray(e.bullets || e.optimizedBullets)[0] || toText(e.description)
-    })),
-    education: toArray(tailored.education || profile.education).map((edu) => ({
-      degree: toText(edu.degree),
-      score: toText(edu.score || edu.gpa),
-      institution: toText(edu.institution),
-      gradYear: toText(edu.gradYear || edu.duration)
-    })),
+    isFresher,
+    totalExperienceYears,
+    education: filteredEducation,
     certifications: toArray(tailored.certifications || profile.certifications).map((c) => ({
       name: toText(c.name || c.title),
       issuer: toText(c.issuingOrganization || c.issuer),
@@ -131,28 +161,14 @@ export default function Screen3Dashboard({ data, fallbackProfile }) {
     setResumeData((prev) => {
       const next = { ...prev };
 
-      // 1. Phone number strictly goes to phone header
-      if (target === 'phone') {
-        next.phone = rawVal;
-      }
-      // 2. Full Name strictly goes to blue banner
-      else if (target === 'fullName') {
-        next.fullName = rawVal;
-      }
-      // 3. Location strictly goes to location header & declaration
+      if (target === 'phone') next.phone = rawVal;
+      else if (target === 'fullName') next.fullName = rawVal;
       else if (target === 'location') {
         next.location = rawVal;
         next.declaration = { ...next.declaration, place: rawVal.split(',')[0] };
       }
-      // 4. LinkedIn strictly goes to upper-right header
-      else if (target === 'linkedin') {
-        next.linkedin = cleanVal;
-      }
-      // 5. GitHub strictly goes to upper-right header
-      else if (target === 'githubUrl') {
-        next.github = cleanVal;
-      }
-      // 6. Personal details strictly go to the Personal Details table
+      else if (target === 'linkedin') next.linkedin = cleanVal;
+      else if (target === 'githubUrl') next.github = cleanVal;
       else if (['fatherName', 'dob', 'gender', 'nationality', 'languages'].includes(target)) {
         const labelMap = {
           fatherName: "Father's Name",
@@ -166,14 +182,28 @@ export default function Screen3Dashboard({ data, fallbackProfile }) {
         updated.push({ label, value: rawVal });
         next.personalDetails = updated;
       }
-      // 7. Education is ONLY touched if the issue was actually about a degree
+      else if (target === 'certifications') {
+        next.certifications = [
+          ...prev.certifications,
+          { name: rawVal, issuer: 'Accredited Authority', date: 'Recent' }
+        ];
+      }
+      else if (target === 'projects') {
+        next.projects = [
+          ...prev.projects,
+          { title: rawVal, techStack: 'Python, Web Stack', description: 'Developed application workflows.' }
+        ];
+      }
+      else if (target === 'experience') {
+        next.isFresher = false;
+        next.totalExperienceYears = "1+ Years of Working Experience";
+      }
       else if (target === 'education') {
         next.education = [
           ...prev.education,
           { degree: rawVal, score: 'Completed', institution: 'University Department', gradYear: 'Current' }
         ];
       }
-      // 8. Skill
       else if (target === 'skill') {
         next.skillsCategories = prev.skillsCategories.map((cat, idx) =>
           idx === 0 ? { ...cat, items: cat.items ? `${cat.items}, ${rawVal}` : rawVal } : cat
@@ -233,7 +263,7 @@ export default function Screen3Dashboard({ data, fallbackProfile }) {
     <div className="results-page">
       <div className="three-col-layout">
         
-        {/* LEFT COLUMN: Cons with Interactive In-Card Dialogs */}
+        {/* LEFT COLUMN */}
         <aside className="audit-col left-col no-print">
           <div className="metric-box">
             <h4>ATS Match Score</h4>
@@ -266,16 +296,28 @@ export default function Screen3Dashboard({ data, fallbackProfile }) {
                           <span className="badge-resolved">✓ Applied to Resume</span>
                         ) : isOpen ? (
                           <div className="con-dialog-box">
-                            {/* Video player strictly for LinkedIn URL */}
                             {c.videoUrl && (
-                              <div className="con-video-wrapper">
-                                <iframe
-                                  src={c.videoUrl}
-                                  title="Tutorial Video"
-                                  frameBorder="0"
-                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                  allowFullScreen
-                                />
+                              <div>
+                                <div className="video-header-row">
+                                  <span className="video-header-title">📺 Shortening Guide</span>
+                                  <a
+                                    href="https://www.youtube.com/watch?v=oga5s3Yngc8"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="video-direct-link"
+                                  >
+                                    Open in YouTube ↗
+                                  </a>
+                                </div>
+                                <div className="con-video-wrapper">
+                                  <iframe
+                                    src={c.videoUrl}
+                                    title="YouTube Video Player"
+                                    frameBorder="0"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowFullScreen
+                                  />
+                                </div>
                               </div>
                             )}
 
@@ -334,16 +376,16 @@ export default function Screen3Dashboard({ data, fallbackProfile }) {
           </div>
         </aside>
 
-        {/* CENTER COLUMN: Resume Canvas */}
+        {/* CENTER COLUMN: Resume Canvas (Strict 1 Page) */}
         <main className="resume-col-center" ref={containerRef}>
           <div className="resume-scaler-wrap" style={{ transform: `scale(${previewScale})`, transformOrigin: 'center center' }}>
             <div className="draft-exact-page" id="resume-sheet" ref={sheetRef}>
               
-              {/* Header */}
+              {/* Header: Left-Stuck Blue Banner & Contacts */}
               <div className="draft-header-grid">
                 <div className="draft-blue-banner">
                   <h1 className="draft-candidate-name">{resumeData.fullName || 'Candidate Name'}</h1>
-                  {resumeData.designation && <p className="draft-candidate-role">{resumeData.designation}</p>}
+                  <p className="draft-candidate-role">{resumeData.designation}</p>
                 </div>
 
                 <div className="draft-contact-list">
@@ -401,7 +443,7 @@ export default function Screen3Dashboard({ data, fallbackProfile }) {
                 </div>
               </div>
 
-              {/* Body */}
+              {/* Body: Yellow Spine */}
               <div className="draft-body-container">
                 {resumeData.summary && (
                   <div className="ref-grid-row">
@@ -409,20 +451,16 @@ export default function Screen3Dashboard({ data, fallbackProfile }) {
                     <div className="ref-grid-content"><p className="body-paragraph">{resumeData.summary}</p></div>
                   </div>
                 )}
-                {resumeData.experience.length > 0 && (
-                  <div className="ref-grid-row">
-                    <div className="ref-grid-title">Experience</div>
-                    <div className="ref-grid-content">
-                      {resumeData.experience.map((exp, idx) => (
-                        <div key={idx} className="entry-box">
-                          <div className="entry-heading"><strong>{exp.title}</strong>{exp.organization && ` – ${exp.organization}`}</div>
-                          {exp.date && <div className="entry-date">{exp.date}</div>}
-                          {exp.desc && <p className="entry-desc">{exp.desc}</p>}
-                        </div>
-                      ))}
-                    </div>
+
+                {/* Experience: Only Years of Working Experience */}
+                <div className="ref-grid-row">
+                  <div className="ref-grid-title">Experience</div>
+                  <div className="ref-grid-content">
+                    <p className="body-paragraph"><strong>{resumeData.totalExperienceYears}</strong></p>
                   </div>
-                )}
+                </div>
+
+                {/* Education: 12th onwards only */}
                 {resumeData.education.length > 0 && (
                   <div className="ref-grid-row">
                     <div className="ref-grid-title">Education</div>
@@ -437,6 +475,7 @@ export default function Screen3Dashboard({ data, fallbackProfile }) {
                     </div>
                   </div>
                 )}
+
                 {resumeData.certifications.length > 0 && (
                   <div className="ref-grid-row">
                     <div className="ref-grid-title">Certifications</div>
@@ -450,6 +489,7 @@ export default function Screen3Dashboard({ data, fallbackProfile }) {
                     </div>
                   </div>
                 )}
+
                 {resumeData.projects.length > 0 && (
                   <div className="ref-grid-row">
                     <div className="ref-grid-title">Projects</div>
@@ -463,6 +503,7 @@ export default function Screen3Dashboard({ data, fallbackProfile }) {
                     </div>
                   </div>
                 )}
+
                 {resumeData.skillsCategories.length > 0 && (
                   <div className="ref-grid-row">
                     <div className="ref-grid-title">Skills</div>
@@ -475,6 +516,7 @@ export default function Screen3Dashboard({ data, fallbackProfile }) {
                     </div>
                   </div>
                 )}
+
                 {resumeData.personalDetails.length > 0 && (
                   <div className="ref-grid-row">
                     <div className="ref-grid-title">Personal<br />Details</div>
@@ -504,7 +546,7 @@ export default function Screen3Dashboard({ data, fallbackProfile }) {
           </div>
         </main>
 
-        {/* RIGHT COLUMN: Pros */}
+        {/* RIGHT COLUMN */}
         <aside className="audit-col right-col scrollable-col no-print">
           <div className="audit-card">
             <h4 className="green-text">Pros & Matched Strengths ({prosList.length})</h4>

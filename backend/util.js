@@ -1,16 +1,11 @@
-/**
- * backend/util.js
- */
-
 function checkLinkedInUrl(rawUrl) {
-  const tutorialVideoUrl = 'https://youtu.be/oga5s3Yngc8?si=C5pl-yJ_vWoMdJ0K';
+  const tutorialVideoUrl = 'https://www.youtube.com/embed/oga5s3Yngc8';
 
-  // 1. Missing URL
   if (!rawUrl || typeof rawUrl !== 'string' || !rawUrl.trim()) {
     return {
       issue: 'Missing LinkedIn Profile URL',
       severity: 'MEDIUM',
-      suggestion: 'Add your shortened LinkedIn URL to your resume header.',
+      suggestion: 'Add your custom shortened LinkedIn URL to your resume header.',
       actionType: 'LINKEDIN_URL_FIX',
       targetField: 'linkedin',
       fieldLabel: 'LinkedIn Profile URL',
@@ -20,9 +15,6 @@ function checkLinkedInUrl(rawUrl) {
   }
 
   const cleaned = rawUrl.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '').trim();
-
-  // 2. ONLY flag if it has an ugly auto-generated hash (e.g. -13552418b or -9b12a84)
-  // or tracking queries, or is truly absurdly long (> 55 chars)
   const hasRandomHash = /-[a-f0-9]{7,}$/i.test(cleaned) || /-\d{6,}$/.test(cleaned);
   const hasQueryParams = cleaned.includes('?');
   const isAbsurdlyLong = cleaned.length > 55;
@@ -40,15 +32,15 @@ function checkLinkedInUrl(rawUrl) {
     };
   }
 
-  // Already shortened and clean -> DO NOT FLAG
   return null;
 }
 
-function checkBasicInfo(personalInfo = {}) {
+function checkBasicInfo(profile = {}) {
   const missingCons = [];
+  const pInfo = profile.personalInfo || {};
 
   const requiredFields = [
-    { key: 'fullName', label: 'Full Name', severity: 'HIGH', placeholder: 'Full Name' },
+    { key: 'fullName', label: 'Full Name', severity: 'HIGH', placeholder: 'Enter Full Name' },
     { key: 'phone', label: 'Phone Number', severity: 'HIGH', placeholder: '+91 XXXXXXXXXX' },
     { key: 'location', label: 'Permanent Address', severity: 'MEDIUM', placeholder: 'City, State' },
     { key: 'githubUrl', label: 'GitHub Profile Link', severity: 'MEDIUM', placeholder: 'github.com/your-username' },
@@ -60,7 +52,7 @@ function checkBasicInfo(personalInfo = {}) {
   ];
 
   requiredFields.forEach(({ key, label, severity, placeholder }) => {
-    const value = personalInfo[key];
+    const value = pInfo[key];
     if (!value || typeof value !== 'string' || !value.trim()) {
       missingCons.push({
         issue: `Missing ${label}`,
@@ -73,6 +65,30 @@ function checkBasicInfo(personalInfo = {}) {
       });
     }
   });
+
+  if (!Array.isArray(profile.certifications) || profile.certifications.length === 0) {
+    missingCons.push({
+      issue: 'Missing Certifications',
+      severity: 'LOW',
+      suggestion: 'Adding technical certifications validates your domain expertise to recruiters.',
+      actionType: 'BASIC_INFO_FIX',
+      targetField: 'certifications',
+      fieldLabel: 'Certification (Name - Issuer)',
+      placeholder: 'e.g. AWS Certified Developer - Amazon'
+    });
+  }
+
+  if (!Array.isArray(profile.projects) || profile.projects.length === 0) {
+    missingCons.push({
+      issue: 'Missing Technical Projects',
+      severity: 'HIGH',
+      suggestion: 'Add at least one technical project demonstrating your programming skills.',
+      actionType: 'BASIC_INFO_FIX',
+      targetField: 'projects',
+      fieldLabel: 'Project (Title - Stack)',
+      placeholder: 'e.g. College Lab App - Python, SQL'
+    });
+  }
 
   return missingCons;
 }
