@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://ats-resume-system-1-dvbp.onrender.com';
 const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api/profiles';
 
 export default function Screen2Form({ mode, onBack, onSuccess, setLoading, setStatusText, setError }) {
@@ -69,7 +69,7 @@ export default function Screen2Form({ mode, onBack, onSuccess, setLoading, setSt
         const formData = new FormData();
         formData.append('file', file);
 
-        const res = await fetch(`${BACKEND_URL}/upload-pdf`, {
+        const res = await fetch(`${API_BASE_URL}/api/profiles/upload-pdf`, {
           method: 'POST',
           body: formData
         });
@@ -131,7 +131,7 @@ export default function Screen2Form({ mode, onBack, onSuccess, setLoading, setSt
           education: validEducation
         };
 
-        const res = await fetch(`${BACKEND_URL}/manual`, {
+        const res = await fetch(`${API_BASE_URL}/api/profiles/manual`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(profilePayload)
@@ -145,7 +145,7 @@ export default function Screen2Form({ mode, onBack, onSuccess, setLoading, setSt
       }
 
       setStatusText('Analyzing competencies & tailoring resume with Gemini AI...');
-      const analyzeRes = await fetch(`${BACKEND_URL}/${profileId}/analyze`, {
+      const analyzeRes = await fetch(`${API_BASE_URL}/api/profiles/${profileId}/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ jobDescription: jd })
