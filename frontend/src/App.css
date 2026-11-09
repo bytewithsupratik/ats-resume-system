@@ -801,7 +801,7 @@ input:focus, .form-textarea:focus {
   flex-shrink: 0;
 }
 
-/* Strict Letter Document Blueprint (612 × 792 pt dimensions - exactly 1 page) */
+/* Strict Letter Document Blueprint (612 × 792 pt dimensions - Guaranteed 1 Page) */
 .draft-exact-page {
   background: #ffffff;
   color: #000000;
@@ -811,7 +811,7 @@ input:focus, .form-textarea:focus {
   max-height: 792px;
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.14);
   box-sizing: border-box;
-  padding: 18px 24px 16px 36px;
+  padding: 14px 20px 12px 28px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -823,7 +823,7 @@ input:focus, .form-textarea:focus {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   gap: 12px;
   flex-shrink: 0;
 }
@@ -832,16 +832,16 @@ input:focus, .form-textarea:focus {
 .draft-blue-banner {
   background-color: #0066ff;
   color: #ffffff;
-  padding: 12px 18px;
+  padding: 10px 16px;
   width: max-content;
   max-width: 65%;
   box-sizing: border-box;
   white-space: nowrap;
-  margin-left: -10px;
+  margin-left: -12px;
 }
 
 .draft-candidate-name {
-  font-size: 16pt;
+  font-size: 15pt;
   font-weight: 700;
   color: #ffffff;
   margin-bottom: 2px;
@@ -851,7 +851,7 @@ input:focus, .form-textarea:focus {
 }
 
 .draft-candidate-role {
-  font-size: 9.5pt;
+  font-size: 9pt;
   font-weight: 500;
   color: #ffffff;
   margin: 0;
@@ -872,71 +872,72 @@ input:focus, .form-textarea:focus {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 6px;
-  font-size: 7.5pt;
+  gap: 5px;
+  font-size: 7.2pt;
   color: #111827;
   text-align: right;
-  line-height: 1.2;
+  line-height: 1.15;
 }
 
 .contact-text { font-weight: 400; }
 .contact-icon { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.contact-icon svg { width: 11px; height: 11px; }
+.contact-icon svg { width: 10px; height: 10px; }
 
 /* Body: Yellow Spine */
 .draft-body-container {
   display: flex;
   flex-direction: column;
-  border-left: 3px solid #ffd000;
-  padding-left: 12px;
-  gap: 7px;
+  border-left: 2.5px solid #ffd000;
+  padding-left: 10px;
+  gap: 8px;
   flex: 1;
-  justify-content: space-evenly;
+  justify-content: flex-start;
 }
 
 .ref-grid-row {
   display: grid;
-  grid-template-columns: 110px 1fr;
-  gap: 12px;
+  grid-template-columns: 100px 1fr;
+  gap: 10px;
   align-items: start;
+  margin-bottom: 4px;
 }
 
 .ref-grid-title {
   color: #0066ff;
   font-weight: 700;
-  font-size: 9pt;
-  line-height: 1.2;
+  font-size: 8.5pt;
+  line-height: 1.15;
 }
 
 .ref-grid-content {
   color: #000000;
-  font-size: 8.2pt;
-  line-height: 1.25;
+  font-size: 7.8pt;
+  line-height: 1.2;
 }
 
-.body-paragraph { margin: 0; line-height: 1.25; }
-.entry-box { margin-bottom: 2px; }
+.body-paragraph { margin: 0; line-height: 1.2; }
+.entry-box { margin-bottom: 1.5px; }
 .entry-heading strong { font-weight: 700; }
 .entry-sub { font-size: 0.95em; color: #111827; margin-top: 1px; }
 .entry-date { font-size: 0.9em; color: #4b5563; margin-top: 1px; }
-.entry-desc { font-size: 0.95em; color: #111827; margin-top: 1px; line-height: 1.2; }
+.entry-desc { font-size: 0.95em; color: #111827; margin-top: 1px; line-height: 1.15; }
 
-.bullet-list { list-style-type: disc; margin: 0; padding-left: 14px; }
-.bullet-list li { margin-bottom: 1px; line-height: 1.2; }
+.bullet-list { list-style-type: disc; margin: 0; padding-left: 12px; }
+.bullet-list li { margin-bottom: 1px; line-height: 1.15; }
 .bullet-list li strong { font-weight: 700; }
 
 .draft-footer-row {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  font-size: 7.5pt;
+  font-size: 7.2pt;
   color: #334155;
-  margin-top: 8px;
-  padding-top: 4px;
+  margin-top: 6px;
+  padding-top: 3px;
   flex-shrink: 0;
 }
 
-.footer-signature p { margin: 0; font-weight: 700; color: #000000; font-size: 8.5pt; }
+.footer-signature p { margin: 0; font-weight: 700; color: #000000; font-size: 8pt; }
 
 /* Print Styles */
 @page { size: letter portrait; margin: 0; }
@@ -983,7 +984,7 @@ input:focus, .form-textarea:focus {
     width: 612pt !important;
     height: 792pt !important;
     max-height: 792pt !important;
-    padding: 18pt 24pt 16pt 36pt !important;
+    padding: 14pt 20pt 12pt 28pt !important;
     margin: 0 !important;
     page-break-after: avoid !important;
     break-inside: avoid !important;

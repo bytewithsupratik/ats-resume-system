@@ -37,12 +37,6 @@ class Education(BaseModel):
     gradYear: Optional[str] = None
     score: Optional[str] = None
 
-class ExperienceItem(BaseModel):
-    title: str
-    organization: Optional[str] = None
-    date: Optional[str] = None
-    description: Optional[str] = None
-
 class Certification(BaseModel):
     name: str
     issuingOrganization: Optional[str] = None
@@ -57,7 +51,6 @@ class Achievement(BaseModel):
 class ProfileSchemaObject(BaseModel):
     personalInfo: PersonalInfo
     skills: Skills
-    experience: List[ExperienceItem] = []
     projects: List[Project] = []
     education: List[Education] = []
     certifications: List[Certification] = []
@@ -94,7 +87,6 @@ class ConItem(BaseModel):
     suggestion: str
 
 class AuditAndScoringOutput(BaseModel):
-    targetJobTitle: str = Field(default="Full Stack - Web Developer")
     scoring: Scoring
     pros: List[ProItem]
     cons: List[ConItem]
@@ -109,14 +101,12 @@ class TailoredResumeContent(BaseModel):
     personalInfo: PersonalInfo
     tailoredSummary: str
     prioritizedSkills: Skills
-    experience: List[ExperienceItem] = []
     optimizedProjects: List[OptimizedProject]
     education: List[Education] = []
     certifications: List[Certification] = []
     achievements: List[Achievement] = []
 
 class AnalysisResponseSchema(BaseModel):
-    targetJobTitle: str = Field(default="Full Stack - Web Developer")
     scoring: Scoring
     audit: AuditFeedback
     tailoredContent: TailoredResumeContent

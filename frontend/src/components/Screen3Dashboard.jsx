@@ -5,6 +5,46 @@ const toArray = (val) => (Array.isArray(val) ? val.filter(Boolean) : val ? [val]
 const toText = (val) => (typeof val === 'string' ? val.trim() : val != null ? String(val) : '');
 const cleanUrl = (url) => (typeof url === 'string' ? url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '') : '');
 
+const parseKeywords = (keywords) => {
+  return toArray(keywords).map(kw => {
+    if (typeof kw === 'string') return kw.trim();
+    if (kw && typeof kw === 'object') {
+      return kw.keyword || kw.name || kw.point || kw.title || String(kw);
+    }
+    return String(kw);
+  }).filter(Boolean);
+};
+
+const parseCons = (cons) => {
+  return toArray(cons).map(c => {
+    if (typeof c === 'string') {
+      return { issue: c, severity: 'MEDIUM', suggestion: '', actionType: '', targetField: '' };
+    }
+    return {
+      issue: c.issue || c.point || c.title || String(c),
+      severity: c.severity || 'MEDIUM',
+      suggestion: c.suggestion || c.description || '',
+      actionType: c.actionType || '',
+      targetField: c.targetField || '',
+      fieldLabel: c.fieldLabel || '',
+      placeholder: c.placeholder || '',
+      videoUrl: c.videoUrl || ''
+    };
+  });
+};
+
+const parsePros = (pros) => {
+  return toArray(pros).map(p => {
+    if (typeof p === 'string') {
+      return { point: p, category: 'Competency' };
+    }
+    return {
+      point: p.point || p.issue || p.description || String(p),
+      category: p.category || 'Competency'
+    };
+  });
+};
+
 const resolveTarget = (con) => {
   if (con.targetField) return con.targetField;
   const issue = (con.issue || '').toLowerCase();
@@ -231,33 +271,47 @@ export default function Screen3Dashboard({ data, fallbackProfile }) {
     }
   };
 
+  // Sort cons by severity: HIGH first, then MEDIUM, then LOW
+  const severityRank = { HIGH: 1, MEDIUM: 2, LOW: 3 };
+  const consList = parseCons(audit?.cons).sort((a, b) => {
+    const rankA = severityRank[(a.severity || 'MEDIUM').toUpperCase()] || 2;
+    const rankB = severityRank[(b.severity || 'MEDIUM').toUpperCase()] || 2;
+    return rankA - rankB;
+  });
+
+  const prosList = parsePros(audit?.pros);
+  const missingKeywords = parseKeywords(audit?.missingKeywords);
+
   const handleKeywordToggle = (kw) => {
     if (addedKeywords.includes(kw)) {
       setResumeData((prev) => ({
         ...prev,
-        skillsCategories: prev.skillsCategories.map((cat, idx) =>
-          idx === 0
+        skillsCategories: prev.skillsCategories.map((cat) =>
+          cat.label === 'Additional Skills'
             ? { ...cat, items: cat.items.split(', ').filter((item) => item !== kw).join(', ') }
             : cat
-        )
+        ).filter((cat) => cat.label !== 'Additional Skills' || cat.items)
       }));
       setAddedKeywords((prev) => prev.filter((k) => k !== kw));
       setLiveScore((prev) => Math.max(0, prev - 3));
     } else {
-      setResumeData((prev) => ({
-        ...prev,
-        skillsCategories: prev.skillsCategories.map((cat, idx) =>
-          idx === 0 ? { ...cat, items: cat.items ? `${cat.items}, ${kw}` : kw } : cat
-        )
-      }));
+      setResumeData((prev) => {
+        let cats = [...prev.skillsCategories];
+        let addCatIndex = cats.findIndex((cat) => cat.label === 'Additional Skills');
+        if (addCatIndex === -1) {
+          cats.push({ label: 'Additional Skills', items: kw });
+        } else {
+          cats[addCatIndex] = {
+            ...cats[addCatIndex],
+            items: cats[addCatIndex].items ? `${cats[addCatIndex].items}, ${kw}` : kw
+          };
+        }
+        return { ...prev, skillsCategories: cats };
+      });
       setAddedKeywords((prev) => [...prev, kw]);
       setLiveScore((prev) => Math.min(100, prev + 3));
     }
   };
-
-  const consList = toArray(audit?.cons);
-  const prosList = toArray(audit?.pros);
-  const missingKeywords = toArray(audit?.missingKeywords);
 
   return (
     <div className="results-page">
