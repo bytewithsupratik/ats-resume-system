@@ -16,8 +16,11 @@ const upload = multer({
 const AI_SERVICE_URL = (process.env.AI_SERVICE_URL || 'http://localhost:8000').trim().replace(/\/$/, '');
 
 function extractCleanJobTitle(jdText = '', aiTitle = '') {
-    if (aiTitle && !/^(about the job|job description|target role|professional|overview|ugc norms)$/i.test(aiTitle.trim())) {
-        return aiTitle.trim();
+    if (aiTitle && typeof aiTitle === 'string' && aiTitle.trim().length > 2) {
+        const cleaned = aiTitle.trim();
+        if (!/^(about the job|job description|target role|professional|overview|ugc norms)$/i.test(cleaned)) {
+            return cleaned;
+        }
     }
 
     const lines = jdText.split('\n').map(l => l.trim()).filter(Boolean);
@@ -26,18 +29,18 @@ function extractCleanJobTitle(jdText = '', aiTitle = '') {
         const match = line.match(/^(?:job title|role|position|designation|hiring for)\s*[:\-]\s*(.+)$/i);
         if (match && match[1]) {
             const candidate = match[1].trim();
-            if (!/about the job|ugc/i.test(candidate)) return candidate.slice(0, 45);
+            if (candidate.length > 2 && !/about the job|ugc/i.test(candidate)) return candidate.slice(0, 45);
         }
     }
 
-    const titleRegex = /\b(?:frontend|backend|full[\s-]?stack|software|web|react|node|python|java|systems?|data|machine learning|ai|devops|cloud|qa|test|assistant professor|lecturer)\s+(?:developer|engineer|architect|lead|specialist|consultant|intern|educator|professor)\b/i;
+    // Fallback to the first clean headline line of the JD
     for (const line of lines) {
-        if (/about the job|ugc/i.test(line)) continue;
-        const match = line.match(titleRegex);
-        if (match) return match[0].split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+        if (!/^(about the job|job description|overview|requirements|responsibilities|details|we are hiring):?/i.test(line) && line.length > 2 && line.length < 50) {
+            return line;
+        }
     }
 
-    return 'Full Stack - Web Developer';
+    return lines[0] ? lines[0].slice(0, 40) : 'Professional';
 }
 
 router.post('/profiles/manual', async (req, res) => {

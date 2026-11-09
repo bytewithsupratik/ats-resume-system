@@ -76,8 +76,7 @@ const buildReferenceResume = (data, fallbackProfile) => {
   const designation = toText(
     root.targetJob?.jobTitle || 
     tailored.targetJobTitle || 
-    personal.title || 
-    'Professional'
+    personal.title 
   );
 
   // Experience Extraction & Total Years calculation
@@ -282,36 +281,49 @@ export default function Screen3Dashboard({ data, fallbackProfile }) {
   const prosList = parsePros(audit?.pros);
   const missingKeywords = parseKeywords(audit?.missingKeywords);
 
-  const handleKeywordToggle = (kw) => {
-    if (addedKeywords.includes(kw)) {
-      setResumeData((prev) => ({
-        ...prev,
-        skillsCategories: prev.skillsCategories.map((cat) =>
-          cat.label === 'Additional Skills'
-            ? { ...cat, items: cat.items.split(', ').filter((item) => item !== kw).join(', ') }
-            : cat
-        ).filter((cat) => cat.label !== 'Additional Skills' || cat.items)
-      }));
-      setAddedKeywords((prev) => prev.filter((k) => k !== kw));
-      setLiveScore((prev) => Math.max(0, prev - 3));
-    } else {
-      setResumeData((prev) => {
-        let cats = [...prev.skillsCategories];
-        let addCatIndex = cats.findIndex((cat) => cat.label === 'Additional Skills');
-        if (addCatIndex === -1) {
-          cats.push({ label: 'Additional Skills', items: kw });
-        } else {
-          cats[addCatIndex] = {
-            ...cats[addCatIndex],
-            items: cats[addCatIndex].items ? `${cats[addCatIndex].items}, ${kw}` : kw
-          };
-        }
-        return { ...prev, skillsCategories: cats };
-      });
-      setAddedKeywords((prev) => [...prev, kw]);
-      setLiveScore((prev) => Math.min(100, prev + 3));
-    }
-  };
+  const categorizeKeyword = (kw) => {
+  const lower = kw.toLowerCase();
+  const langKeywords = ['python', 'java', 'javascript', 'typescript', 'c', 'c++', 'c#', 'go', 'rust', 'ruby', 'php', 'swift', 'kotlin', 'sql'];
+  const webKeywords = ['react', 'node', 'express', 'django', 'flask', 'spring', 'angular', 'vue', 'html', 'css', 'bootstrap', 'tailwind', 'next.js', 'fastapi'];
+  const toolKeywords = ['git', 'github', 'docker', 'aws', 'linux', 'postman', 'mongodb', 'postgresql', 'mysql', 'redis', 'vs code', 'jira', 'kubernetes'];
+  
+  if (langKeywords.some(l => lower.includes(l))) return 'Programming Languages';
+  if (webKeywords.some(w => lower.includes(w))) return 'Web & Frameworks';
+  if (toolKeywords.some(t => lower.includes(t))) return 'Tools';
+  return 'Core Concepts';
+};
+
+const handleKeywordToggle = (kw) => {
+  const targetCategory = categorizeKeyword(kw);
+  if (addedKeywords.includes(kw)) {
+    setResumeData((prev) => ({
+      ...prev,
+      skillsCategories: prev.skillsCategories.map((cat) =>
+        cat.label === targetCategory
+          ? { ...cat, items: cat.items.split(', ').filter((item) => item !== kw).join(', ') }
+          : cat
+      ).filter((cat) => cat.items)
+    }));
+    setAddedKeywords((prev) => prev.filter((k) => k !== kw));
+    setLiveScore((prev) => Math.max(0, prev - 3));
+  } else {
+    setResumeData((prev) => {
+      let cats = [...prev.skillsCategories];
+      let catIndex = cats.findIndex((cat) => cat.label === targetCategory);
+      if (catIndex === -1) {
+        cats.push({ label: targetCategory, items: kw });
+      } else {
+        cats[catIndex] = {
+          ...cats[catIndex],
+          items: cats[catIndex].items ? `${cats[catIndex].items}, ${kw}` : kw
+        };
+      }
+      return { ...prev, skillsCategories: cats };
+    });
+    setAddedKeywords((prev) => [...prev, kw]);
+    setLiveScore((prev) => Math.min(100, prev + 3));
+  }
+};
 
   return (
     <div className="results-page">

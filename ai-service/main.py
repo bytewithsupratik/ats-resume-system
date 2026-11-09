@@ -61,7 +61,7 @@ async def parse_linkedin(payload: dict):
     if not raw_text:
         raise HTTPException(status_code=400, detail="rawText is required.")
     
-    system_prompt = "You are an expert HR data parser. Extract structured candidate profile details without hallucinating facts."
+    system_prompt = "You are an expert HR data parser. Extract structured candidate profile details including experience entries without hallucinating facts."
     user_prompt = f"Extract all details into JSON from this raw LinkedIn text:\n{raw_text}"
     
     return await _groq_structured(system_prompt, user_prompt, ProfileSchemaObject, temperature=0.1)
@@ -174,6 +174,7 @@ async def analyse_and_tailor(payload:dict):
     personal_info = profile_data.get("personalInfo", {})
     existing_skills = profile_data.get("skills", {})
     existing_projects = profile_data.get("projects", [])
+    existing_experience = profile_data.get("experience", [])
 
     try:
         summary_res = await generate_summary(personal_info.get("summary", ""), existing_skills, job_description)
@@ -182,6 +183,7 @@ async def analyse_and_tailor(payload:dict):
         audit_res = await generate_audit_and_score(profile_data, job_description)
 
         return AnalysisResponseSchema(
+            targetJobTitle=audit_res.get("targetJobTitle"),
             scoring=audit_res["scoring"],
             audit=AuditFeedback(
                 pros=audit_res["pros"],
@@ -192,6 +194,7 @@ async def analyse_and_tailor(payload:dict):
                 personalInfo=personal_info,
                 tailoredSummary=summary_res["tailoredSummary"],
                 prioritizedSkills=skills_res,
+                experience=existing_experience,
                 optimizedProjects=projects_res["optimizedProjects"],
                 education=profile_data.get("education", []),
                 certifications=profile_data.get("certifications", []),
